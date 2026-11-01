@@ -50,7 +50,7 @@ class ExampleUnitTest {
   }
 
   @Test
-  fun `execution args strictly match iOS Liquid Glass engine specifications`() {
+  fun `execution args strictly match authentic iOS Liquid Glass engine specifications with NO GOP`() {
     val args = StatusHDOptimizerEngine.buildExecutionArgs(
       inputFile = "/storage/input.mp4",
       outputFile = "/storage/output.mp4",
@@ -76,10 +76,12 @@ class ExampleUnitTest {
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
-    assertEquals("48", argsList[argsList.indexOf("-g") + 1])
     assertEquals("2500k", argsList[argsList.indexOf("-maxrate") + 1])
     assertEquals("5000k", argsList[argsList.indexOf("-bufsize") + 1])
     assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
+
+    // CRITICAL: GOP (-g) MUST BE COMPLETELY ABSENT
+    assertFalse("-g parameter must be completely removed from FFmpeg arguments", argsList.contains("-g"))
 
     // Audio & Flags
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])
@@ -101,6 +103,7 @@ class ExampleUnitTest {
     val argsList = args.toList()
     assertTrue(argsList.contains("-an"))
     assertFalse(argsList.contains("-c:a"))
+    assertFalse(argsList.contains("-g"))
   }
 
   @Test

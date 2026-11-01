@@ -91,8 +91,6 @@ class StatusHDOptimizerEngine(private val context: Context) {
     args.add("aq-mode=3")
     args.add("-crf")
     args.add("20")
-    args.add("-g")
-    args.add("48")
     args.add("-maxrate")
     args.add("${maxrate}k")
     args.add("-bufsize")

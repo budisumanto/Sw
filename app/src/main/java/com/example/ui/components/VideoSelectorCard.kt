@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,14 +22,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChangeCircle
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,10 +40,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.VideoMetadata
-import com.example.ui.theme.MintAccent
+import com.example.ui.theme.ElectricMint
+import com.example.ui.theme.ElectricMintDark
+import com.example.ui.theme.IOSTextPrimary
+import com.example.ui.theme.IOSTextSecondary
 
 @Composable
 fun VideoSelectorCard(
@@ -60,30 +63,37 @@ fun VideoSelectorCard(
     }
   }
 
-  LiquidGlassBox(
+  IOSLiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
-      .testTag("video_selector_card")
+      .testTag("video_selector_card"),
+    cornerRadius = 28.dp,
+    padding = 22.dp
   ) {
     if (selectedVideo == null) {
-      // State: Belum Ada Video
+      // State 1: Pemilihan Video (Idle) - Hero Glass Card
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(vertical = 14.dp),
+          .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
+        // Floating Video Icon with Soft Radiant Glow
         Box(
           modifier = Modifier
-            .size(76.dp)
+            .size(80.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
-                listOf(Color(0xFF10B981).copy(alpha = 0.25f), Color.Transparent)
+                listOf(
+                  ElectricMint.copy(alpha = 0.22f),
+                  Color(0xFF00F2FE).copy(alpha = 0.08f),
+                  Color.Transparent
+                )
               )
             )
             .border(
-              androidx.compose.foundation.BorderStroke(1.dp, GlassBorderTopHighlight),
+              BorderStroke(1.dp, IOSGlassHighlightTop),
               CircleShape
             )
             .clickable {
@@ -96,31 +106,35 @@ fun VideoSelectorCard(
           Icon(
             imageVector = Icons.Default.Movie,
             contentDescription = "Pilih Video",
-            tint = MintAccent,
-            modifier = Modifier.size(36.dp)
+            tint = ElectricMint,
+            modifier = Modifier.size(38.dp)
           )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-          text = "Pilih Video dari Galeri",
-          style = MaterialTheme.typography.titleMedium,
+          text = "Pilih Video",
+          fontSize = 20.sp,
           fontWeight = FontWeight.Bold,
-          color = Color.White
+          color = IOSTextPrimary,
+          letterSpacing = (-0.3).sp
         )
 
+        Spacer(modifier = Modifier.height(6.dp))
+
         Text(
-          text = "Format dan resolusi akan dioptimalkan otomatis agar jernih dan tidak pecah.",
-          style = MaterialTheme.typography.bodySmall,
-          color = Color(0xFF94A3B8),
+          text = "Format dan ukuran disesuaikan otomatis agar tidak buram.",
+          fontSize = 13.sp,
+          color = IOSTextSecondary,
           textAlign = TextAlign.Center,
-          lineHeight = 18.sp,
+          lineHeight = 19.sp,
           modifier = Modifier
             .padding(horizontal = 16.dp)
-            .padding(top = 6.dp, bottom = 20.dp)
+            .padding(bottom = 22.dp)
         )
 
+        // Tombol aksi iOS Kaca Berpendar
         Button(
           onClick = {
             mediaPicker.launch(
@@ -129,35 +143,66 @@ fun VideoSelectorCard(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(54.dp)
             .testTag("pick_video_button"),
-          shape = RoundedCornerShape(16.dp),
+          shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
-            containerColor = MintAccent,
-            contentColor = Color(0xFF003822)
-          )
+            containerColor = Color.Transparent,
+            contentColor = Color(0xFF021E14)
+          ),
+          border = BorderStroke(1.dp, IOSGlassHighlightTop)
         ) {
-          Icon(imageVector = Icons.Default.VideoFile, contentDescription = null, modifier = Modifier.size(18.dp))
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Buka Galeri", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .background(
+                Brush.horizontalGradient(
+                  listOf(ElectricMint, ElectricMintDark)
+                ),
+                shape = RoundedCornerShape(20.dp)
+              ),
+            contentAlignment = Alignment.Center
+          ) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.PhotoLibrary,
+                contentDescription = null,
+                tint = Color(0xFF022115),
+                modifier = Modifier.size(19.dp)
+              )
+              Spacer(modifier = Modifier.width(8.dp))
+              Text(
+                text = "Buka Galeri",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color(0xFF022115)
+              )
+            }
+          }
         }
       }
     } else {
-      // State: Video Dipilih
-      Column(modifier = Modifier.fillMaxWidth()) {
+      // State 2: Video Terpilih & Siap Dioptimalkan (Selected)
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          // Thumbnail Box
+          // Thumbnail video melengkung lembut (16.dp)
           Box(
             modifier = Modifier
-              .size(width = 84.dp, height = 98.dp)
-              .clip(RoundedCornerShape(18.dp))
-              .background(Color.Black.copy(alpha = 0.4f))
+              .size(width = 86.dp, height = 98.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .background(Color.Black.copy(alpha = 0.5f))
               .border(
-                androidx.compose.foundation.BorderStroke(1.dp, GlassBorderTopHighlight),
-                RoundedCornerShape(18.dp)
+                BorderStroke(1.dp, IOSGlassHighlightTop),
+                RoundedCornerShape(16.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
@@ -172,19 +217,19 @@ fun VideoSelectorCard(
               Icon(
                 imageVector = Icons.Default.Movie,
                 contentDescription = null,
-                tint = MintAccent,
-                modifier = Modifier.size(32.dp)
+                tint = ElectricMint,
+                modifier = Modifier.size(34.dp)
               )
             }
 
-            // Duration Pill
+            // Duration Pill in bottom right
             Box(
               modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(6.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.75f))
-                .padding(horizontal = 5.dp, vertical = 2.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.78f))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
               Text(
                 text = selectedVideo.formattedDuration,
@@ -197,57 +242,75 @@ fun VideoSelectorCard(
 
           Spacer(modifier = Modifier.width(16.dp))
 
-          // Video Info
+          // Video Information
           Column(modifier = Modifier.weight(1f)) {
             Text(
               text = selectedVideo.fileName,
-              style = MaterialTheme.typography.titleMedium,
+              fontSize = 16.sp,
               fontWeight = FontWeight.Bold,
-              color = Color.White,
-              maxLines = 1
+              color = IOSTextPrimary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-              text = "${selectedVideo.formattedDuration} • ${selectedVideo.formattedSize}",
-              style = MaterialTheme.typography.bodyMedium,
-              color = Color(0xFFA7F3D0),
+              text = "${selectedVideo.fileName.substringBeforeLast(".")} • ${selectedVideo.formattedSize}",
+              fontSize = 13.sp,
+              color = ElectricMint,
               fontWeight = FontWeight.SemiBold
             )
 
             if (selectedVideo.needsSplitting) {
               Spacer(modifier = Modifier.height(6.dp))
               Text(
-                text = "Video panjang akan otomatis dibagi menjadi bagian-bagian rapi.",
-                fontSize = 11.sp,
-                color = Color(0xFFFCD34D),
-                lineHeight = 15.sp
+                text = "Video panjang otomatis dibagi menjadi beberapa bagian rapi.",
+                fontSize = 12.sp,
+                color = Color(0xFFFDE68A),
+                lineHeight = 16.sp
               )
             }
           }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
-
+        // Tombol teks kaca halus di kanan: "Ganti Video"
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.End
         ) {
-          OutlinedButton(
-            onClick = {
-              mediaPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(14.dp))
+              .background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
+              .border(
+                BorderStroke(1.dp, IOSGlassHighlightTop),
+                RoundedCornerShape(14.dp)
               )
-            },
-            modifier = Modifier.testTag("change_video_button"),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorderTopHighlight),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+              .clickable {
+                mediaPicker.launch(
+                  PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                )
+              }
+              .padding(horizontal = 14.dp, vertical = 8.dp)
+              .testTag("change_video_button"),
+            contentAlignment = Alignment.Center
           ) {
-            Icon(imageVector = Icons.Default.ChangeCircle, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Ganti Video", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                imageVector = Icons.Default.Autorenew,
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+                tint = IOSTextPrimary
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "Ganti Video",
+                fontSize = 13.sp,
+                color = IOSTextPrimary,
+                fontWeight = FontWeight.SemiBold
+              )
+            }
           }
         }
       }

@@ -35,7 +35,8 @@ import com.example.ui.components.ResultDisplayCard
 import com.example.ui.components.TopBarHeader
 import com.example.ui.components.VideoPlayerDialog
 import com.example.ui.components.VideoSelectorCard
-import com.example.ui.theme.DarkObsidian
+import com.example.ui.theme.IOSMidnightBackground
+import com.example.ui.theme.IOSMidnightDark
 import com.example.viewmodel.OptimizerViewModel
 
 @Composable
@@ -52,21 +53,21 @@ fun StatusHDOptimizerScreen(
   Scaffold(
     modifier = modifier
       .fillMaxSize()
-      .background(DarkObsidian)
+      .background(IOSMidnightBackground)
       .testTag("status_hd_optimizer_screen"),
     contentWindowInsets = WindowInsets.safeDrawing,
-    containerColor = DarkObsidian
+    containerColor = IOSMidnightBackground
   ) { innerPadding ->
-    // iOS Liquid Glass Canvas with subtle emerald radial aura
+    // Canvas: Deep Midnight Obsidian with soft radial ambient glow
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(
           Brush.verticalGradient(
             listOf(
-              Color(0xFF0C1914),
-              DarkObsidian,
-              Color(0xFF070D0B)
+              IOSMidnightDark,
+              IOSMidnightBackground,
+              Color(0xFF040609)
             )
           )
         )
@@ -74,33 +75,53 @@ fun StatusHDOptimizerScreen(
         .navigationBarsPadding(),
       contentAlignment = Alignment.TopCenter
     ) {
+      // Ambient radial lighting layer at the top
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(300.dp)
+          .background(
+            Brush.radialGradient(
+              colors = listOf(
+                Color(0xFF10E599).copy(alpha = 0.08f),
+                Color(0xFF00F2FE).copy(alpha = 0.04f),
+                Color.Transparent
+              )
+            )
+          )
+      )
+
       Column(
         modifier = Modifier
           .fillMaxWidth()
           .widthIn(max = 600.dp)
           .verticalScroll(rememberScrollState())
           .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
       ) {
-        // 1. Header Minimalis
+        // 1. Top Header Minimalis iOS
         TopBarHeader()
 
-        // 2. Area Pemilihan Video
-        VideoSelectorCard(
-          selectedVideo = selectedVideo,
-          onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) }
-        )
+        // 2. Area Pemilihan Video (State 1: Hero Glass Card / State 2: Selected Video)
+        if (processingState !is ProcessingState.Success) {
+          VideoSelectorCard(
+            selectedVideo = selectedVideo,
+            onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) }
+          )
+        }
 
-        // 3. Tombol Aksi Utama & Status Berjalan
-        ExecutionProgressCard(
-          processingState = processingState,
-          hasVideoSelected = selectedVideo != null,
-          onStartOptimize = { viewModel.startOptimization(context) },
-          onCancel = { viewModel.cancelOptimization() },
-          onReset = { viewModel.resetOptimization() }
-        )
+        // 3. Tombol Aksi Utama & Status Berjalan (State 2: Optimalkan Kualitas / State 3: Processing)
+        if (processingState !is ProcessingState.Success) {
+          ExecutionProgressCard(
+            processingState = processingState,
+            hasVideoSelected = selectedVideo != null,
+            onStartOptimize = { viewModel.startOptimization(context) },
+            onCancel = { viewModel.cancelOptimization() },
+            onReset = { viewModel.resetOptimization() }
+          )
+        }
 
-        // 4. Hasil & Opsi Berbagi
+        // 4. Hasil & Opsi Berbagi (State 4: Selesai & Bagikan)
         AnimatedVisibility(
           visible = processingState is ProcessingState.Success,
           enter = fadeIn(),
