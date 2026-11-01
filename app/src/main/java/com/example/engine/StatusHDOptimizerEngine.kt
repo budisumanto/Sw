@@ -124,8 +124,15 @@ class StatusHDOptimizerEngine(private val context: Context) {
           primaryCommandUsed = command
         }
 
+        // FFmpegKit takes command arguments without the leading "ffmpeg " executable name
+        val executionCommand = if (command.startsWith("ffmpeg ")) {
+          command.removePrefix("ffmpeg ")
+        } else {
+          command
+        }
+
         val success = executeChunkSession(
-          command = command,
+          command = executionCommand,
           chunkIndex = chunkIndex + 1,
           totalChunks = chunkCount,
           chunkDurationMs = chunkDurationMs,

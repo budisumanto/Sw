@@ -361,6 +361,29 @@ fun ExecutionProgressCard(
               color = Color(0xFFFCA5A5)
             )
 
+            if (processingState.logs.isNotEmpty()) {
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(100.dp)
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(DarkObsidian)
+                  .padding(8.dp)
+              ) {
+                LazyColumn {
+                  items(processingState.logs.takeLast(10)) { log ->
+                    Text(
+                      text = log,
+                      fontFamily = FontFamily.Monospace,
+                      fontSize = 9.sp,
+                      color = Color(0xFFFCA5A5),
+                      lineHeight = 13.sp
+                    )
+                  }
+                }
+              }
+            }
+
             Button(
               onClick = onReset,
               shape = RoundedCornerShape(8.dp),
