@@ -1,0 +1,157 @@
+package com.example.ui.screens
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import com.example.model.ProcessingState
+import com.example.ui.components.CommandInspectorCard
+import com.example.ui.components.CompressionControlsCard
+import com.example.ui.components.ExecutionProgressCard
+import com.example.ui.components.ResultDisplayCard
+import com.example.ui.components.TopBarHeader
+import com.example.ui.components.VideoPlayerDialog
+import com.example.ui.components.VideoSelectorCard
+import com.example.ui.theme.DarkObsidian
+import com.example.viewmodel.OptimizerViewModel
+
+@Composable
+fun StatusHDOptimizerScreen(
+  viewModel: OptimizerViewModel,
+  modifier: Modifier = Modifier
+) {
+  val context = LocalContext.current
+
+  val selectedVideo by viewModel.selectedVideo.collectAsState()
+  val resolutionMode by viewModel.resolutionMode.collectAsState()
+  val contentProfile by viewModel.contentProfile.collectAsState()
+  val autoSplitEnabled by viewModel.forceAutoSplit.collectAsState()
+  val processingState by viewModel.processingState.collectAsState()
+  val isCommandExpanded by viewModel.isCommandInspectorExpanded.collectAsState()
+  val isLogsExpanded by viewModel.isLiveLogsExpanded.collectAsState()
+  val isGeneratingSample by viewModel.isGeneratingSample.collectAsState()
+  val previewSegment by viewModel.previewSegment.collectAsState()
+
+  val generatedCommand = viewModel.getGeneratedCommand()
+
+  Scaffold(
+    modifier = modifier
+      .fillMaxSize()
+      .background(DarkObsidian)
+      .testTag("status_hd_optimizer_screen"),
+    contentWindowInsets = WindowInsets.safeDrawing,
+    containerColor = DarkObsidian
+  ) { innerPadding ->
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(innerPadding)
+        .navigationBarsPadding(),
+      contentAlignment = Alignment.TopCenter
+    ) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .widthIn(max = 680.dp)
+          .verticalScroll(rememberScrollState())
+          .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+        // App Header
+        TopBarHeader()
+
+        // 1. Media Selector Card
+        VideoSelectorCard(
+          selectedVideo = selectedVideo,
+          isGeneratingSample = isGeneratingSample,
+          onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) },
+          onLoadSample = { isLong, isHighMotion ->
+            viewModel.onLoadSampleVideo(context, isLong, isHighMotion)
+          }
+        )
+
+        // 2. Dynamic Compression Controls Card
+        CompressionControlsCard(
+          selectedResolution = resolutionMode,
+          selectedProfile = contentProfile,
+          autoSplitEnabled = autoSplitEnabled,
+          onResolutionChanged = { mode -> viewModel.setResolutionMode(mode) },
+          onProfileChanged = { profile -> viewModel.setContentProfile(profile) },
+          onAutoSplitToggled = { enabled -> viewModel.setForceAutoSplit(enabled) }
+        )
+
+        // 3. Dynamic FFmpeg Command Builder Inspector
+        CommandInspectorCard(
+          command = generatedCommand,
+          isExpanded = isCommandExpanded,
+          onToggleExpand = { viewModel.toggleCommandInspector() }
+        )
+
+        // 4. Execution & Status View
+        ExecutionProgressCard(
+          processingState = processingState,
+          isLogsExpanded = isLogsExpanded,
+          hasVideoSelected = selectedVideo != null,
+          onStartOptimize = { viewModel.startOptimization(context) },
+          onCancel = { viewModel.cancelOptimization() },
+          onReset = { viewModel.resetOptimization() },
+          onToggleLogs = { viewModel.toggleLiveLogs() }
+        )
+
+        // 5. Result Display (Shown when processing succeeds)
+        AnimatedVisibility(
+          visible = processingState is ProcessingState.Success,
+          enter = fadeIn(),
+          exit = fadeOut()
+        ) {
+          val successState = processingState as? ProcessingState.Success
+          if (successState != null) {
+            ResultDisplayCard(
+              result = successState.result,
+              onShareToWhatsApp = { segment -> viewModel.shareSegment(context, segment) },
+              onShareAll = { segments -> viewModel.shareAll(context, segments) },
+              onSaveToGallery = { segment -> viewModel.saveSegment(context, segment) },
+              onSaveAllToGallery = { segments -> viewModel.saveAllSegments(context, segments) },
+              onPreviewSegment = { segment -> viewModel.setPreviewSegment(segment) }
+            )
+          }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+      }
+
+      // Video Player Dialog overlay
+      previewSegment?.let { segment ->
+        VideoPlayerDialog(
+          segment = segment,
+          onDismiss = { viewModel.setPreviewSegment(null) },
+          onShare = { seg -> viewModel.shareSegment(context, seg) }
+        )
+      }
+    }
+  }
+}
