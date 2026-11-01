@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,9 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,9 +28,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,10 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.OptimizationResult
 import com.example.model.VideoSegment
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceElevated
-import com.example.ui.theme.DarkSurfaceVariant
 import com.example.ui.theme.MintAccent
 
 @Composable
@@ -66,18 +58,13 @@ fun ResultDisplayCard(
   onPreviewSegment: (VideoSegment) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  Card(
+  LiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
-      .testTag("result_display_card"),
-    shape = RoundedCornerShape(20.dp),
-    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-    border = BorderStroke(1.5.dp, MintAccent.copy(alpha = 0.5f))
+      .testTag("result_display_card")
   ) {
     Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp),
+      modifier = Modifier.fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
       // Header: Success & Bypass Verified
@@ -89,7 +76,7 @@ fun ResultDisplayCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
           Box(
             modifier = Modifier
-              .size(36.dp)
+              .size(38.dp)
               .clip(CircleShape)
               .background(MintAccent),
             contentAlignment = Alignment.Center
@@ -98,7 +85,7 @@ fun ResultDisplayCard(
               imageVector = Icons.Default.Check,
               contentDescription = null,
               tint = Color(0xFF003822),
-              modifier = Modifier.size(22.dp)
+              modifier = Modifier.size(24.dp)
             )
           }
 
@@ -112,7 +99,7 @@ fun ResultDisplayCard(
               color = Color.White
             )
             Text(
-              text = "WA Status direct bypass standards enforced",
+              text = "CRF 20 • ${result.smartConfig.targetResolutionLabel}",
               fontSize = 11.sp,
               color = Color(0xFFA7F3D0)
             )
@@ -121,8 +108,8 @@ fun ResultDisplayCard(
 
         Box(
           modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color(0xFF064E3B))
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF064E3B).copy(alpha = 0.8f))
             .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
@@ -134,7 +121,7 @@ fun ResultDisplayCard(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-              text = "VERIFIED",
+              text = "BYPASS VERIFIED",
               fontSize = 10.sp,
               fontWeight = FontWeight.ExtraBold,
               color = MintAccent
@@ -147,8 +134,8 @@ fun ResultDisplayCard(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .clip(RoundedCornerShape(12.dp))
-          .background(DarkSurfaceElevated)
+          .clip(RoundedCornerShape(16.dp))
+          .background(Color.White.copy(alpha = 0.05f))
           .padding(14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -157,7 +144,7 @@ fun ResultDisplayCard(
           Text(text = "Original Size", fontSize = 11.sp, color = Color(0xFF94A3B8))
           Text(
             text = result.formattedOriginalSize,
-            fontSize = 15.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFCBD5E1)
           )
@@ -165,9 +152,9 @@ fun ResultDisplayCard(
 
         Box(
           modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF0C2B24))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFF0C2B24).copy(alpha = 0.9f))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
           Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -189,30 +176,16 @@ fun ResultDisplayCard(
           Text(text = "Optimized Size", fontSize = 11.sp, color = Color(0xFF94A3B8))
           Text(
             text = result.formattedOptimizedSize,
-            fontSize = 15.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MintAccent
           )
         }
       }
 
-      // WhatsApp Bypass Verification Checklist
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .clip(RoundedCornerShape(10.dp))
-          .background(DarkSurfaceVariant)
-          .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-      ) {
-        VerificationItem(title = "FastStart Atom (+faststart)", subtitle = "Instant WhatsApp playback parser")
-        VerificationItem(title = "Strict Color Space (yuv420p)", subtitle = "Skips cloud transcode re-render")
-        VerificationItem(title = "Locked GOP Structure (-g 30)", subtitle = "Fixed 1 keyframe/sec prevents flash tearing")
-      }
-
       // Segment List
       Text(
-        text = "GENERATED STATUS SEGMENTS",
+        text = "STATUS SEGMENTS",
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         color = Color(0xFF94A3B8),
@@ -221,7 +194,7 @@ fun ResultDisplayCard(
 
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         result.segments.forEach { segment ->
-          SegmentItemCard(
+          LiquidSegmentItem(
             segment = segment,
             onShare = { onShareToWhatsApp(segment) },
             onSave = { onSaveToGallery(segment) },
@@ -242,9 +215,9 @@ fun ResultDisplayCard(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(54.dp)
             .testTag("share_whatsapp_status_button"),
-          shape = RoundedCornerShape(14.dp),
+          shape = RoundedCornerShape(16.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = MintAccent,
             contentColor = Color(0xFF003822)
@@ -257,7 +230,7 @@ fun ResultDisplayCard(
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = if (result.segments.size == 1) "Share directly to WhatsApp Status" else "Share All (${result.segments.size} Parts) to WhatsApp",
+            text = if (result.segments.size == 1) "Share to WhatsApp Status" else "Share All (${result.segments.size} Parts) to WhatsApp",
             fontWeight = FontWeight.Black,
             fontSize = 15.sp
           )
@@ -270,8 +243,8 @@ fun ResultDisplayCard(
             .fillMaxWidth()
             .height(48.dp)
             .testTag("save_to_gallery_button"),
-          shape = RoundedCornerShape(12.dp),
-          border = BorderStroke(1.dp, Color(0xFF334155))
+          shape = RoundedCornerShape(14.dp),
+          border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
         ) {
           Icon(
             imageVector = Icons.Default.Download,
@@ -291,7 +264,7 @@ fun ResultDisplayCard(
 }
 
 @Composable
-fun SegmentItemCard(
+fun LiquidSegmentItem(
   segment: VideoSegment,
   onShare: () -> Unit,
   onSave: () -> Unit,
@@ -300,8 +273,9 @@ fun SegmentItemCard(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(12.dp))
-      .background(DarkSurfaceElevated)
+      .clip(RoundedCornerShape(14.dp))
+      .background(Color.White.copy(alpha = 0.05f))
+      .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(14.dp))
       .padding(10.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -309,8 +283,8 @@ fun SegmentItemCard(
     Box(
       modifier = Modifier
         .size(width = 56.dp, height = 56.dp)
-        .clip(RoundedCornerShape(8.dp))
-        .background(Color(0xFF090E0C))
+        .clip(RoundedCornerShape(10.dp))
+        .background(Color.Black.copy(alpha = 0.5f))
         .clickable(onClick = onPreview),
       contentAlignment = Alignment.Center
     ) {
@@ -334,7 +308,7 @@ fun SegmentItemCard(
         modifier = Modifier
           .size(24.dp)
           .clip(CircleShape)
-          .background(Color.Black.copy(alpha = 0.6f)),
+          .background(Color.Black.copy(alpha = 0.65f)),
         contentAlignment = Alignment.Center
       ) {
         Icon(
@@ -391,29 +365,5 @@ fun SegmentItemCard(
         )
       }
     }
-  }
-}
-
-@Composable
-fun VerificationItem(title: String, subtitle: String) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    Icon(
-      imageVector = Icons.Default.CheckCircle,
-      contentDescription = null,
-      tint = MintAccent,
-      modifier = Modifier.size(14.dp)
-    )
-    Spacer(modifier = Modifier.width(6.dp))
-    Text(
-      text = "$title — ",
-      fontSize = 11.sp,
-      fontWeight = FontWeight.Bold,
-      color = Color.White
-    )
-    Text(
-      text = subtitle,
-      fontSize = 11.sp,
-      color = Color(0xFF94A3B8)
-    )
   }
 }

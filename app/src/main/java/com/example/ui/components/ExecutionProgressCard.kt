@@ -1,12 +1,10 @@
 package com.example.ui.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,10 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -36,8 +34,6 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -53,17 +49,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ProcessingState
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkObsidian
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceElevated
 import com.example.ui.theme.MintAccent
 
 @Composable
@@ -79,35 +73,30 @@ fun ExecutionProgressCard(
 ) {
   val logListState = rememberLazyListState()
 
-  Card(
+  LiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
-      .testTag("execution_progress_card"),
-    shape = RoundedCornerShape(20.dp),
-    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-    border = BorderStroke(1.dp, DarkBorder)
+      .testTag("execution_progress_card")
   ) {
     Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp),
+      modifier = Modifier.fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
       when (processingState) {
         is ProcessingState.Idle -> {
-          // Action Button: Start Optimization
+          // Action Button: Glowing Liquid Glass Button
           Button(
             onClick = onStartOptimize,
             enabled = hasVideoSelected,
             modifier = Modifier
               .fillMaxWidth()
-              .height(54.dp)
+              .height(56.dp)
               .testTag("optimize_for_wa_status_button"),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
               containerColor = MintAccent,
               contentColor = Color(0xFF003822),
-              disabledContainerColor = DarkSurfaceElevated,
+              disabledContainerColor = Color.White.copy(alpha = 0.08f),
               disabledContentColor = Color(0xFF64748B)
             )
           ) {
@@ -118,7 +107,7 @@ fun ExecutionProgressCard(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-              text = if (hasVideoSelected) "Optimize for WA Status" else "Select a Video First",
+              text = if (hasVideoSelected) "Optimize for WhatsApp Status" else "Select Video First",
               fontSize = 16.sp,
               fontWeight = FontWeight.Black
             )
@@ -129,7 +118,7 @@ fun ExecutionProgressCard(
           Column(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(vertical = 8.dp),
+              .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             CircularProgressIndicator(
@@ -148,7 +137,7 @@ fun ExecutionProgressCard(
         }
 
         is ProcessingState.Compressing -> {
-          // Live Real-Time Encoding Dashboard
+          // Real-time progress view
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Header with chunk info and cancel
             Row(
@@ -161,7 +150,7 @@ fun ExecutionProgressCard(
                   Box(
                     modifier = Modifier
                       .size(8.dp)
-                      .clip(androidx.compose.foundation.shape.CircleShape)
+                      .clip(CircleShape)
                       .background(MintAccent)
                   )
                   Spacer(modifier = Modifier.width(6.dp))
@@ -184,7 +173,7 @@ fun ExecutionProgressCard(
               OutlinedButton(
                 onClick = onCancel,
                 modifier = Modifier.testTag("cancel_optimization_button"),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, Color(0xFFEF4444)),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444))
               ) {
@@ -208,7 +197,7 @@ fun ExecutionProgressCard(
                   .clip(RoundedCornerShape(4.dp))
                   .testTag("encoding_progress_bar"),
                 color = MintAccent,
-                trackColor = DarkSurfaceElevated
+                trackColor = Color.White.copy(alpha = 0.08f)
               )
 
               if (processingState.totalChunks > 1) {
@@ -235,9 +224,9 @@ fun ExecutionProgressCard(
             Row(
               modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(DarkSurfaceElevated)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.05f))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
               horizontalArrangement = Arrangement.SpaceBetween
             ) {
               LiveStat(label = "Speed", value = String.format("%.2fx", processingState.speed.coerceAtLeast(0.0)))
@@ -287,8 +276,8 @@ fun ExecutionProgressCard(
                 modifier = Modifier
                   .fillMaxWidth()
                   .height(120.dp)
-                  .clip(RoundedCornerShape(8.dp))
-                  .background(DarkObsidian)
+                  .clip(RoundedCornerShape(12.dp))
+                  .background(Color.Black.copy(alpha = 0.5f))
                   .padding(8.dp)
               ) {
                 LazyColumn(state = logListState) {
@@ -329,8 +318,8 @@ fun ExecutionProgressCard(
 
             Button(
               onClick = onReset,
-              shape = RoundedCornerShape(8.dp),
-              colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
+              shape = RoundedCornerShape(10.dp),
+              colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f))
             ) {
               Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
               Spacer(modifier = Modifier.width(4.dp))
@@ -340,8 +329,8 @@ fun ExecutionProgressCard(
         }
 
         is ProcessingState.Error -> {
-          val context = androidx.compose.ui.platform.LocalContext.current
-          var showErrorLogs by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+          val context = LocalContext.current
+          var showErrorLogs by remember { mutableStateOf(false) }
 
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
@@ -372,10 +361,10 @@ fun ExecutionProgressCard(
               Row(
                 modifier = Modifier
                   .fillMaxWidth()
-                  .clip(RoundedCornerShape(6.dp))
-                  .background(DarkSurfaceElevated)
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(Color.White.copy(alpha = 0.05f))
                   .clickable { showErrorLogs = !showErrorLogs }
-                  .padding(horizontal = 8.dp, vertical = 6.dp),
+                  .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
               ) {
@@ -399,8 +388,8 @@ fun ExecutionProgressCard(
                     modifier = Modifier
                       .fillMaxWidth()
                       .height(140.dp)
-                      .clip(RoundedCornerShape(8.dp))
-                      .background(DarkObsidian)
+                      .clip(RoundedCornerShape(12.dp))
+                      .background(Color.Black.copy(alpha = 0.6f))
                       .padding(8.dp)
                   ) {
                     LazyColumn {
@@ -418,9 +407,9 @@ fun ExecutionProgressCard(
 
                   OutlinedButton(
                     onClick = {
-                      val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                      cm.setPrimaryClip(android.content.ClipData.newPlainText("FFmpeg Error Logs", processingState.logs.joinToString("\n")))
-                      android.widget.Toast.makeText(context, "Error logs copied", android.widget.Toast.LENGTH_SHORT).show()
+                      val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                      cm.setPrimaryClip(ClipData.newPlainText("FFmpeg Error Logs", processingState.logs.joinToString("\n")))
+                      Toast.makeText(context, "Error logs copied", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier.height(36.dp),
                     shape = RoundedCornerShape(8.dp)
@@ -434,7 +423,7 @@ fun ExecutionProgressCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               Button(
                 onClick = onReset,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintAccent, contentColor = Color(0xFF003822))
               ) {
                 Text("Try Again", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -444,20 +433,18 @@ fun ExecutionProgressCard(
         }
 
         is ProcessingState.Success -> {
-          // In success state, the ResultDisplayCard takes the spotlight,
-          // but we provide a re-encode / optimize again button
           Button(
             onClick = onReset,
             modifier = Modifier
               .fillMaxWidth()
-              .height(44.dp)
+              .height(46.dp)
               .testTag("reoptimize_button"),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f))
           ) {
             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Optimize with Different Settings", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text("Optimize Another Video", fontSize = 13.sp, fontWeight = FontWeight.Bold)
           }
         }
       }
@@ -477,3 +464,4 @@ fun LiveStat(label: String, value: String) {
     )
   }
 }
+

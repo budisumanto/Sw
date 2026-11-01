@@ -38,59 +38,59 @@ data class VideoMetadata(
     get() = if (durationMs <= 0) 1 else kotlin.math.ceil(durationMs / 90_000.0).toInt().coerceAtLeast(1)
 }
 
-enum class ResolutionMode(
-  val label: String,
-  val badge: String,
-  val maxDimension: Int,
+data class SmartEncodingConfig(
+  val targetResolutionLabel: String,
   val scaleFilter: String,
-  val description: String
+  val crf: Int = 20,
+  val preset: String = "medium",
+  val maxrate: String = "4000k",
+  val bufsize: String = "8000k",
+  val gop: Int = 30
 ) {
-  HD_720P(
-    label = "720p HD",
-    badge = "Balanced & Fast",
-    maxDimension = 720,
-    scaleFilter = "scale='min(720,trunc(iw/2)*2)':-2",
-    description = "Optimized for fast encoding and standard mobile display."
-  ),
-  CRISP_1080P(
-    label = "1080p Crisp HD",
-    badge = "Max Density",
-    maxDimension = 1080,
-    scaleFilter = "scale='min(1080,trunc(iw/2)*2)':-2",
-    description = "Packs maximum pixel sharpness within identical WhatsApp bitrate caps."
-  )
-}
+  companion object {
+    fun createDefault(): SmartEncodingConfig = SmartEncodingConfig(
+      targetResolutionLabel = "Auto Smart HD",
+      scaleFilter = "scale='trunc(min(1080,iw)/2)*2':-2",
+      crf = 20,
+      preset = "medium",
+      maxrate = "4000k",
+      bufsize = "8000k",
+      gop = 30
+    )
 
-enum class ContentProfile(
-  val label: String,
-  val badge: String,
-  val description: String,
-  val crf: Int,
-  val preset: String,
-  val maxrate: String,
-  val bufsize: String,
-  val gop: Int
-) {
-  STANDARD(
-    label = "Standard Video",
-    badge = "Vlogs / Casual",
-    description = "Ideal for talking heads, lifestyle clips, and steady cameras without rapid flashing.",
-    crf = 23,
-    preset = "medium",
-    maxrate = "2.2M",
-    bufsize = "4.4M",
-    gop = 30
-  ),
-  HIGH_MOTION(
-    label = "High Motion / Jedag-Jedug",
-    badge = "Fast Cuts & Shake",
-    description = "Enforces dense GOP keyframes (1s) and higher bitrate burst to prevent pixelation on transitions.",
-    crf = 20,
-    preset = "medium",
-    maxrate = "2.8M",
-    bufsize = "5.6M",
-    gop = 30
-  )
+    fun computeSmartConfig(video: VideoMetadata): SmartEncodingConfig {
+      val isPortrait = video.height >= video.width
+      val (scaleFilter, resLabel) = if (isPortrait) {
+        if (video.width in 1..720) {
+          "scale='trunc(min(720,iw)/2)*2':-2" to "${video.width}x${video.height} (Native)"
+        } else if (video.width in 721..1080) {
+          "scale='trunc(min(1080,iw)/2)*2':-2" to "${video.width}x${video.height} (1080p HD)"
+        } else {
+          "scale='trunc(min(1080,iw)/2)*2':-2" to "1080p (Downscaled 4K)"
+        }
+      } else {
+        if (video.height in 1..720) {
+          "scale=-2:'trunc(min(720,ih)/2)*2'" to "${video.width}x${video.height} (Native)"
+        } else {
+          "scale=-2:'trunc(min(1080,ih)/2)*2'" to "1080p HD"
+        }
+      }
+
+      // Bitrate limit at 4000k max, without exceeding original bitrate to prevent size bloat
+      val originalKbps = if (video.bitrateBps > 0) video.bitrateBps / 1000L else 4000L
+      val targetKbps = minOf(4000L, originalKbps.coerceAtLeast(1500L))
+
+      return SmartEncodingConfig(
+        targetResolutionLabel = resLabel,
+        scaleFilter = scaleFilter,
+        crf = 20,
+        preset = "medium",
+        maxrate = "${targetKbps}k",
+        bufsize = "${targetKbps * 2}k",
+        gop = 30
+      )
+    }
+  }
 }
 
 data class VideoSegment(
@@ -121,8 +121,7 @@ data class OptimizationResult(
   val totalOptimizedSizeBytes: Long,
   val executionDurationMs: Long,
   val commandUsed: String,
-  val resolutionMode: ResolutionMode,
-  val contentProfile: ContentProfile,
+  val smartConfig: SmartEncodingConfig,
   val timestamp: Long = System.currentTimeMillis()
 ) {
   val savedPercentage: Int

@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.DarkBorder
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.MintAccent
 
@@ -48,21 +48,25 @@ fun TopBarHeader(
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 12.dp),
+      .padding(horizontal = 4.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Box(
         modifier = Modifier
-          .size(42.dp)
-          .clip(RoundedCornerShape(12.dp))
-          .background(Color(0xFF0C2B24)),
+          .size(44.dp)
+          .clip(RoundedCornerShape(14.dp))
+          .background(Color(0xFF10B981).copy(alpha = 0.2f))
+          .border(
+            androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF34D399).copy(alpha = 0.4f)),
+            RoundedCornerShape(14.dp)
+          ),
         contentAlignment = Alignment.Center
       ) {
         Icon(
           imageVector = Icons.Default.VideoLibrary,
-          contentDescription = "StatusHD Icon",
+          contentDescription = "StatusHD Logo",
           tint = MintAccent,
           modifier = Modifier.size(24.dp)
         )
@@ -78,24 +82,24 @@ fun TopBarHeader(
             fontWeight = FontWeight.Black,
             color = Color.White
           )
-          Spacer(modifier = Modifier.width(6.dp))
+          Spacer(modifier = Modifier.width(8.dp))
           Box(
             modifier = Modifier
               .clip(RoundedCornerShape(6.dp))
-              .background(Color(0xFF064E3B))
+              .background(Color(0xFF064E3B).copy(alpha = 0.8f))
               .padding(horizontal = 6.dp, vertical = 2.dp)
           ) {
             Text(
-              text = "BYPASS",
-              fontSize = 10.sp,
-              fontWeight = FontWeight.ExtraBold,
+              text = "LIQUID GLASS",
+              fontSize = 9.sp,
+              fontWeight = FontWeight.Black,
               color = MintAccent
             )
           }
         }
 
         Text(
-          text = "WhatsApp Status HD Video Optimizer",
+          text = "Offline Smart WhatsApp Status Optimizer",
           style = MaterialTheme.typography.labelSmall,
           color = Color(0xFF94A3B8)
         )
@@ -106,7 +110,11 @@ fun TopBarHeader(
       Box(
         modifier = Modifier
           .clip(CircleShape)
-          .background(Color(0xFF13221C))
+          .background(Color.White.copy(alpha = 0.06f))
+          .border(
+            androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+            CircleShape
+          )
           .padding(horizontal = 8.dp, vertical = 4.dp)
       ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -151,7 +159,7 @@ fun TopBarHeader(
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = "How StatusHD Bypasses Blur",
+            text = "Smart Liquid Engine Specs",
             fontWeight = FontWeight.Bold,
             color = Color.White
           )
@@ -160,16 +168,16 @@ fun TopBarHeader(
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           Text(
-            text = "WhatsApp compresses uploaded videos unless they match precise structural standards:",
+            text = "StatusHD automatically optimizes video for WhatsApp Status:",
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFFE2E8F0)
           )
           Text(
-            text = "1. Container & Atom: FastStart MOOV atom (-movflags +faststart) placed at the file head for instant parsing.\n" +
-              "2. Color Space: Strictly enforced 8-bit yuv420p.\n" +
-              "3. GOP Structure: Fixed keyframe interval (-g 30) ensures 1 full I-frame per second, stopping pixelation.\n" +
-              "4. Bitrate & Buffer: Capped to 2.2M-2.8M with 2x bufsize to prevent server-side downsampling.\n" +
-              "5. Auto-Splitting: Automatically slices videos longer than 90 seconds into sequential Status-ready segments.",
+            text = "• Auto Resolution: Analyzes input resolution, preserves 720p/1080p, and scales down 4K.\n" +
+              "• Quality: Fixed master CRF 20 for crystal-clear playback.\n" +
+              "• Bitrate Limit: Capped at 4000k with anti-bloat protection.\n" +
+              "• WA Bypass: Enforces FastStart atom, strict yuv420p color space, and fixed GOP (-g 30).\n" +
+              "• Auto-Split: Automatically divides videos >90 seconds into sequential Status-ready parts.",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF94A3B8)
           )
@@ -181,7 +189,7 @@ fun TopBarHeader(
         }
       },
       containerColor = DarkSurface,
-      shape = RoundedCornerShape(16.dp)
+      shape = RoundedCornerShape(20.dp)
     )
   }
 }

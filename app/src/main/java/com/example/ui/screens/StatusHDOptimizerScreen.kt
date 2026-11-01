@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,14 +24,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.model.ProcessingState
 import com.example.ui.components.CommandInspectorCard
-import com.example.ui.components.CompressionControlsCard
 import com.example.ui.components.ExecutionProgressCard
 import com.example.ui.components.ResultDisplayCard
+import com.example.ui.components.SmartEngineGlassCard
 import com.example.ui.components.TopBarHeader
 import com.example.ui.components.VideoPlayerDialog
 import com.example.ui.components.VideoSelectorCard
@@ -47,8 +48,7 @@ fun StatusHDOptimizerScreen(
   val context = LocalContext.current
 
   val selectedVideo by viewModel.selectedVideo.collectAsState()
-  val resolutionMode by viewModel.resolutionMode.collectAsState()
-  val contentProfile by viewModel.contentProfile.collectAsState()
+  val smartConfig by viewModel.smartConfig.collectAsState()
   val autoSplitEnabled by viewModel.forceAutoSplit.collectAsState()
   val processingState by viewModel.processingState.collectAsState()
   val isCommandExpanded by viewModel.isCommandInspectorExpanded.collectAsState()
@@ -66,9 +66,19 @@ fun StatusHDOptimizerScreen(
     contentWindowInsets = WindowInsets.safeDrawing,
     containerColor = DarkObsidian
   ) { innerPadding ->
+    // Liquid Glass Ambient Background Mesh
     Box(
       modifier = Modifier
         .fillMaxSize()
+        .background(
+          Brush.verticalGradient(
+            listOf(
+              Color(0xFF07120D),
+              DarkObsidian,
+              Color(0xFF050E0B)
+            )
+          )
+        )
         .padding(innerPadding)
         .navigationBarsPadding(),
       contentAlignment = Alignment.TopCenter
@@ -76,42 +86,37 @@ fun StatusHDOptimizerScreen(
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .widthIn(max = 680.dp)
+          .widthIn(max = 640.dp)
           .verticalScroll(rememberScrollState())
-          .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+          .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
       ) {
         // App Header
         TopBarHeader()
 
-        // 1. Media Selector Card
+        // 1. Media Selector (Liquid Glass)
         VideoSelectorCard(
           selectedVideo = selectedVideo,
           isGeneratingSample = isGeneratingSample,
           onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) },
-          onLoadSample = { isLong, isHighMotion ->
-            viewModel.onLoadSampleVideo(context, isLong, isHighMotion)
-          }
+          onLoadSample = { isLong -> viewModel.onLoadSampleVideo(context, isLong) }
         )
 
-        // 2. Dynamic Compression Controls Card
-        CompressionControlsCard(
-          selectedResolution = resolutionMode,
-          selectedProfile = contentProfile,
+        // 2. Smart Engine Glass Card (Auto-detected resolution, CRF 20, 4000k limit)
+        SmartEngineGlassCard(
+          config = smartConfig,
           autoSplitEnabled = autoSplitEnabled,
-          onResolutionChanged = { mode -> viewModel.setResolutionMode(mode) },
-          onProfileChanged = { profile -> viewModel.setContentProfile(profile) },
           onAutoSplitToggled = { enabled -> viewModel.setForceAutoSplit(enabled) }
         )
 
-        // 3. Dynamic FFmpeg Command Builder Inspector
+        // 3. Dynamic Command Inspector (Liquid Glass)
         CommandInspectorCard(
           command = generatedCommand,
           isExpanded = isCommandExpanded,
           onToggleExpand = { viewModel.toggleCommandInspector() }
         )
 
-        // 4. Execution & Status View
+        // 4. Execution & Status View (Liquid Glass Action Button & Progress)
         ExecutionProgressCard(
           processingState = processingState,
           isLogsExpanded = isLogsExpanded,
@@ -122,7 +127,7 @@ fun StatusHDOptimizerScreen(
           onToggleLogs = { viewModel.toggleLiveLogs() }
         )
 
-        // 5. Result Display (Shown when processing succeeds)
+        // 5. Result Display (Liquid Glass)
         AnimatedVisibility(
           visible = processingState is ProcessingState.Success,
           enter = fadeIn(),
@@ -141,7 +146,7 @@ fun StatusHDOptimizerScreen(
           }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
       }
 
       // Video Player Dialog overlay

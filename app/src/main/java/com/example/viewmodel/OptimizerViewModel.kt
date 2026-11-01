@@ -7,20 +7,21 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.engine.StatusHDOptimizerEngine
-import com.example.model.ContentProfile
 import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
-import com.example.model.ResolutionMode
+import com.example.model.SmartEncodingConfig
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.util.ExportHelper
 import com.example.util.SampleVideoHelper
 import com.example.util.VideoMetadataHelper
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.io.File
 
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -29,11 +30,13 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
 
-  private val _resolutionMode = MutableStateFlow(ResolutionMode.HD_720P)
-  val resolutionMode: StateFlow<ResolutionMode> = _resolutionMode.asStateFlow()
-
-  private val _contentProfile = MutableStateFlow(ContentProfile.STANDARD)
-  val contentProfile: StateFlow<ContentProfile> = _contentProfile.asStateFlow()
+  // Smart config is automatically derived from the selected video
+  val smartConfig: StateFlow<SmartEncodingConfig> = _selectedVideo
+    .map { video ->
+      if (video != null) SmartEncodingConfig.computeSmartConfig(video)
+      else SmartEncodingConfig.createDefault()
+    }
+    .stateIn(viewModelScope, SharingStarted.Eagerly, SmartEncodingConfig.createDefault())
 
   private val _forceAutoSplit = MutableStateFlow(true)
   val forceAutoSplit: StateFlow<Boolean> = _forceAutoSplit.asStateFlow()
@@ -45,9 +48,6 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   private val _isLiveLogsExpanded = MutableStateFlow(false)
   val isLiveLogsExpanded: StateFlow<Boolean> = _isLiveLogsExpanded.asStateFlow()
-
-  private val _history = MutableStateFlow<List<OptimizationResult>>(emptyList())
-  val history: StateFlow<List<OptimizationResult>> = _history.asStateFlow()
 
   private val _previewSegment = MutableStateFlow<VideoSegment?>(null)
   val previewSegment: StateFlow<VideoSegment?> = _previewSegment.asStateFlow()
@@ -67,34 +67,23 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
-  fun onLoadSampleVideo(context: Context, longDuration: Boolean = false, highMotion: Boolean = false) {
+  fun onLoadSampleVideo(context: Context, longDuration: Boolean = false) {
     viewModelScope.launch {
       _isGeneratingSample.value = true
-      Toast.makeText(context, "Preparing demo video with FFmpeg...", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Preparing liquid demo video...", Toast.LENGTH_SHORT).show()
       val duration = if (longDuration) 100 else 15
-      val file = SampleVideoHelper.generateSampleVideo(context, duration, highMotion)
+      val file = SampleVideoHelper.generateSampleVideo(context, duration, false)
       _isGeneratingSample.value = false
       if (file != null) {
         val meta = VideoMetadataHelper.extractMetadataFromFile(file)
         if (meta != null) {
           _selectedVideo.value = meta
-          if (highMotion) {
-            _contentProfile.value = ContentProfile.HIGH_MOTION
-          }
           engine.resetToIdle()
         }
       } else {
         Toast.makeText(context, "Failed to generate sample video", Toast.LENGTH_SHORT).show()
       }
     }
-  }
-
-  fun setResolutionMode(mode: ResolutionMode) {
-    _resolutionMode.value = mode
-  }
-
-  fun setContentProfile(profile: ContentProfile) {
-    _contentProfile.value = profile
   }
 
   fun setForceAutoSplit(enabled: Boolean) {
@@ -113,14 +102,13 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     val video = _selectedVideo.value
     val inputPath = video?.filePath ?: "input.mp4"
     val outputPath = if (video != null) {
-      "output_${video.fileName.substringBeforeLast(".")}_hd.mp4"
-    } else "output.mp4"
+      "status_${video.fileName.substringBeforeLast(".")}_hd.mp4"
+    } else "status_output_hd.mp4"
 
     return engine.buildDisplayCommand(
       inputFile = inputPath,
       outputFile = outputPath,
-      resolutionMode = _resolutionMode.value,
-      contentProfile = _contentProfile.value,
+      config = smartConfig.value,
       isSegment = (video?.durationMs ?: 0L) > 90_000L && _forceAutoSplit.value,
       startSec = 0,
       durationSec = 90,
@@ -131,15 +119,10 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   fun startOptimization(context: Context) {
     val video = _selectedVideo.value ?: return
     viewModelScope.launch {
-      val result = engine.optimizeVideo(
+      engine.optimizeVideo(
         sourceVideo = video,
-        resolutionMode = _resolutionMode.value,
-        contentProfile = _contentProfile.value,
         forceAutoSplit = _forceAutoSplit.value
       )
-      if (result != null) {
-        _history.value = listOf(result) + _history.value
-      }
     }
   }
 
@@ -155,7 +138,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     viewModelScope.launch {
       val success = ExportHelper.saveToGallery(context, segment.file)
       if (success) {
-        Toast.makeText(context, "Saved Part ${segment.partIndex} to Movies/StatusHD", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Saved to Movies/StatusHD", Toast.LENGTH_SHORT).show()
       } else {
         Toast.makeText(context, "Failed to save to gallery", Toast.LENGTH_SHORT).show()
       }
@@ -170,7 +153,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
           savedCount++
         }
       }
-      Toast.makeText(context, "Saved $savedCount segments to Movies/StatusHD", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Saved $savedCount parts to Movies/StatusHD", Toast.LENGTH_SHORT).show()
     }
   }
 

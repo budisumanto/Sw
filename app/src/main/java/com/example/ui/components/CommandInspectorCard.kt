@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -21,13 +20,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,9 +39,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkObsidian
-import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.MintAccent
 
 @Composable
@@ -57,19 +50,12 @@ fun CommandInspectorCard(
 ) {
   val context = LocalContext.current
 
-  Card(
+  LiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
-      .testTag("command_inspector_card"),
-    shape = RoundedCornerShape(16.dp),
-    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-    border = BorderStroke(1.dp, DarkBorder)
+      .testTag("command_inspector_card")
   ) {
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(14.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
       Row(
         modifier = Modifier
           .fillMaxWidth()
@@ -86,25 +72,11 @@ fun CommandInspectorCard(
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = "FFmpeg Command Generator",
+            text = "FFmpeg Command Preview",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = Color.White
           )
-          Spacer(modifier = Modifier.width(6.dp))
-          Box(
-            modifier = Modifier
-              .clip(RoundedCornerShape(4.dp))
-              .background(Color(0xFF064E3B))
-              .padding(horizontal = 6.dp, vertical = 2.dp)
-          ) {
-            Text(
-              text = "DYNAMIC",
-              fontSize = 9.sp,
-              fontWeight = FontWeight.Bold,
-              color = MintAccent
-            )
-          }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -141,9 +113,9 @@ fun CommandInspectorCard(
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(8.dp))
-              .background(DarkObsidian)
-              .padding(10.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(Color.Black.copy(alpha = 0.5f))
+              .padding(12.dp)
               .horizontalScroll(rememberScrollState())
           ) {
             Text(
@@ -153,18 +125,6 @@ fun CommandInspectorCard(
               color = Color(0xFFA7F3D0),
               lineHeight = 16.sp
             )
-          }
-
-          Spacer(modifier = Modifier.padding(top = 6.dp))
-
-          // Flag explanation highlights
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-          ) {
-            FlagPill(name = "-movflags +faststart", desc = "Instant Play Atom")
-            FlagPill(name = "-pix_fmt yuv420p", desc = "8-bit Standard")
-            FlagPill(name = "-g 30", desc = "1s Keyframe Lock")
           }
         }
       }
@@ -180,21 +140,5 @@ fun CommandInspectorCard(
         )
       }
     }
-  }
-}
-
-@Composable
-fun FlagPill(name: String, desc: String) {
-  Box(
-    modifier = Modifier
-      .clip(RoundedCornerShape(4.dp))
-      .background(Color(0xFF13221C))
-      .padding(horizontal = 6.dp, vertical = 2.dp)
-  ) {
-    Text(
-      text = "$name ($desc)",
-      fontSize = 9.sp,
-      color = Color(0xFF6EE7B7)
-    )
   }
 }

@@ -1,8 +1,7 @@
 package com.example
 
-import com.example.model.ContentProfile
 import com.example.model.OptimizationResult
-import com.example.model.ResolutionMode
+import com.example.model.SmartEncodingConfig
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.model.formatFileSize
@@ -15,28 +14,65 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `resolution mode scale filters match specification`() {
-    assertEquals("scale='min(720,trunc(iw/2)*2)':-2", ResolutionMode.HD_720P.scaleFilter)
-    assertEquals("scale='min(1080,trunc(iw/2)*2)':-2", ResolutionMode.CRISP_1080P.scaleFilter)
+  fun `smart config auto detects 1080p portrait video`() {
+    val portrait1080p = VideoMetadata(
+      filePath = "/dummy/sample.mp4",
+      fileName = "sample.mp4",
+      durationMs = 30_000L,
+      width = 1080,
+      height = 1920,
+      bitrateBps = 8_000_000L
+    )
+
+    val config = SmartEncodingConfig.computeSmartConfig(portrait1080p)
+
+    assertEquals("scale='trunc(min(1080,iw)/2)*2':-2", config.scaleFilter)
+    assertEquals(20, config.crf)
+    assertEquals("4000k", config.maxrate)
+    assertEquals("8000k", config.bufsize)
+    assertEquals(30, config.gop)
+    assertTrue(config.targetResolutionLabel.contains("1080p"))
   }
 
   @Test
-  fun `content profiles configure exact required encoding parameters`() {
-    // Standard Profile
-    val standard = ContentProfile.STANDARD
-    assertEquals(23, standard.crf)
-    assertEquals("medium", standard.preset)
-    assertEquals("2.2M", standard.maxrate)
-    assertEquals("4.4M", standard.bufsize)
-    assertEquals(30, standard.gop)
+  fun `smart config preserves 720p without upscaling`() {
+    val portrait720p = VideoMetadata(
+      filePath = "/dummy/sample_720.mp4",
+      fileName = "sample_720.mp4",
+      durationMs = 20_000L,
+      width = 720,
+      height = 1280,
+      bitrateBps = 3_000_000L
+    )
 
-    // High Motion / Jedag-Jedug Profile
-    val highMotion = ContentProfile.HIGH_MOTION
-    assertEquals(20, highMotion.crf)
-    assertEquals("medium", highMotion.preset)
-    assertEquals("2.8M", highMotion.maxrate)
-    assertEquals("5.6M", highMotion.bufsize)
-    assertEquals(30, highMotion.gop)
+    val config = SmartEncodingConfig.computeSmartConfig(portrait720p)
+
+    assertEquals("scale='trunc(min(720,iw)/2)*2':-2", config.scaleFilter)
+    assertEquals(20, config.crf)
+    assertEquals("3000k", config.maxrate) // Capped to original 3000k to prevent size bloat!
+    assertEquals("6000k", config.bufsize)
+    assertEquals(30, config.gop)
+    assertTrue(config.targetResolutionLabel.contains("Native"))
+  }
+
+  @Test
+  fun `smart config downscales 4K video to 1080p`() {
+    val video4k = VideoMetadata(
+      filePath = "/dummy/4k.mp4",
+      fileName = "4k.mp4",
+      durationMs = 60_000L,
+      width = 2160,
+      height = 3840,
+      bitrateBps = 45_000_000L
+    )
+
+    val config = SmartEncodingConfig.computeSmartConfig(video4k)
+
+    assertEquals("scale='trunc(min(1080,iw)/2)*2':-2", config.scaleFilter)
+    assertEquals(20, config.crf)
+    assertEquals("4000k", config.maxrate) // Clamped to 4000k max
+    assertEquals("8000k", config.bufsize)
+    assertTrue(config.targetResolutionLabel.contains("Downscaled 4K"))
   }
 
   @Test
@@ -90,8 +126,7 @@ class ExampleUnitTest {
       totalOptimizedSizeBytes = 8 * 1024 * 1024L,
       executionDurationMs = 2500L,
       commandUsed = "ffmpeg ...",
-      resolutionMode = ResolutionMode.HD_720P,
-      contentProfile = ContentProfile.STANDARD
+      smartConfig = SmartEncodingConfig.createDefault()
     )
 
     assertEquals(60, result.savedPercentage)

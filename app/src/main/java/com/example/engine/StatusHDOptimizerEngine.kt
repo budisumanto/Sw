@@ -4,10 +4,9 @@ import android.content.Context
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
-import com.example.model.ContentProfile
 import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
-import com.example.model.ResolutionMode
+import com.example.model.SmartEncodingConfig
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.util.VideoMetadataHelper
@@ -40,8 +39,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
   fun buildExecutionArgs(
     inputFile: String,
     outputFile: String,
-    resolutionMode: ResolutionMode,
-    contentProfile: ContentProfile,
+    config: SmartEncodingConfig,
     isSegment: Boolean = false,
     startSec: Int = 0,
     durationSec: Int = MAX_CHUNK_DURATION_SEC,
@@ -63,26 +61,26 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add(durationSec.toString())
     }
 
-    // Video stream mapping & filter
+    // Video stream mapping & smart filter
     args.add("-map")
     args.add("0:v:0")
 
     args.add("-vf")
-    args.add(resolutionMode.scaleFilter)
+    args.add(config.scaleFilter)
 
-    // H.264 Video Codec & Profile parameters
+    // H.264 Video Codec & Smart Parameters (CRF 20, 4000k maxrate, GOP 30)
     args.add("-c:v")
     args.add("libx264")
     args.add("-crf")
-    args.add(contentProfile.crf.toString())
+    args.add(config.crf.toString())
     args.add("-preset")
-    args.add(contentProfile.preset)
+    args.add(config.preset)
     args.add("-g")
-    args.add(contentProfile.gop.toString())
+    args.add(config.gop.toString())
     args.add("-maxrate")
-    args.add(contentProfile.maxrate)
+    args.add(config.maxrate)
     args.add("-bufsize")
-    args.add(contentProfile.bufsize)
+    args.add(config.bufsize)
     args.add("-pix_fmt")
     args.add("yuv420p")
 
@@ -118,8 +116,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
   fun buildDisplayCommand(
     inputFile: String = "input.mp4",
     outputFile: String = "output.mp4",
-    resolutionMode: ResolutionMode,
-    contentProfile: ContentProfile,
+    config: SmartEncodingConfig,
     isSegment: Boolean = false,
     startSec: Int = 0,
     durationSec: Int = MAX_CHUNK_DURATION_SEC,
@@ -128,8 +125,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
     val args = buildExecutionArgs(
       inputFile = inputFile,
       outputFile = outputFile,
-      resolutionMode = resolutionMode,
-      contentProfile = contentProfile,
+      config = config,
       isSegment = isSegment,
       startSec = startSec,
       durationSec = durationSec,
@@ -146,12 +142,10 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
   suspend fun optimizeVideo(
     sourceVideo: VideoMetadata,
-    resolutionMode: ResolutionMode,
-    contentProfile: ContentProfile,
     forceAutoSplit: Boolean = true
   ): OptimizationResult? = withContext(Dispatchers.IO) {
     isCancelledByUser = false
-    _processingState.value = ProcessingState.Preparing("Initializing StatusHD encoding engine...")
+    _processingState.value = ProcessingState.Preparing("Analyzing video & preparing smart liquid encode...")
 
     val inputFile = File(sourceVideo.filePath)
     if (!inputFile.exists()) {
@@ -159,6 +153,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
       return@withContext null
     }
 
+    val smartConfig = SmartEncodingConfig.computeSmartConfig(sourceVideo)
     val outputDir = File(context.cacheDir, "status_hd_output_${System.currentTimeMillis()}").apply { mkdirs() }
     val totalDurationSec = (sourceVideo.durationMs / 1000).toInt().coerceAtLeast(1)
     val shouldSplit = forceAutoSplit && totalDurationSec > MAX_CHUNK_DURATION_SEC
@@ -190,8 +185,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
         val args = buildExecutionArgs(
           inputFile = inputFile.absolutePath,
           outputFile = outputFile.absolutePath,
-          resolutionMode = resolutionMode,
-          contentProfile = contentProfile,
+          config = smartConfig,
           isSegment = shouldSplit,
           startSec = startSec,
           durationSec = chunkDurationSec,
@@ -202,8 +196,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
           primaryCommandUsed = buildDisplayCommand(
             inputFile = inputFile.absolutePath,
             outputFile = outputFile.absolutePath,
-            resolutionMode = resolutionMode,
-            contentProfile = contentProfile,
+            config = smartConfig,
             isSegment = shouldSplit,
             startSec = startSec,
             durationSec = chunkDurationSec,
@@ -265,8 +258,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
         totalOptimizedSizeBytes = totalOptimizedSize,
         executionDurationMs = executionDurationMs,
         commandUsed = primaryCommandUsed,
-        resolutionMode = resolutionMode,
-        contentProfile = contentProfile
+        smartConfig = smartConfig
       )
 
       _processingState.value = ProcessingState.Success(finalResult)
@@ -308,7 +300,6 @@ class StatusHDOptimizerEngine(private val context: Context) {
           isCancelledByUser = true
           completionLatch.complete(false)
         } else {
-          // Failure: collect logs from completedSession
           completedSession.allLogs?.forEach { l ->
             val msg = l.message?.trim()
             if (!msg.isNullOrBlank()) {

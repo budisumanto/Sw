@@ -25,12 +25,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -41,19 +37,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.VideoMetadata
 import com.example.ui.theme.AmberWarning
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceElevated
-import com.example.ui.theme.DarkSurfaceVariant
 import com.example.ui.theme.MintAccent
 
 @Composable
@@ -61,10 +54,9 @@ fun VideoSelectorCard(
   selectedVideo: VideoMetadata?,
   isGeneratingSample: Boolean,
   onVideoSelected: (android.net.Uri) -> Unit,
-  onLoadSample: (isLong: Boolean, isHighMotion: Boolean) -> Unit,
+  onLoadSample: (isLong: Boolean) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val context = LocalContext.current
   val mediaPicker = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.PickVisualMedia()
   ) { uri ->
@@ -73,27 +65,37 @@ fun VideoSelectorCard(
     }
   }
 
-  Card(
+  LiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
-      .testTag("video_selector_card"),
-    shape = RoundedCornerShape(20.dp),
-    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-    border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+      .testTag("video_selector_card")
   ) {
     if (selectedVideo == null) {
-      // Empty State: Prompt to select or generate
+      // Empty State: Glass Dropzone
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(20.dp),
+          .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
         Box(
           modifier = Modifier
-            .size(68.dp)
+            .size(72.dp)
             .clip(CircleShape)
-            .background(DarkSurfaceElevated)
+            .background(
+              Brush.radialGradient(
+                listOf(Color(0xFF10B981).copy(alpha = 0.3f), Color.Transparent)
+              )
+            )
+            .border(
+              androidx.compose.foundation.BorderStroke(
+                1.5.dp,
+                Brush.verticalGradient(
+                  listOf(Color(0xFF34D399).copy(alpha = 0.5f), Color.White.copy(alpha = 0.1f))
+                )
+              ),
+              CircleShape
+            )
             .clickable {
               mediaPicker.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
@@ -109,23 +111,23 @@ fun VideoSelectorCard(
           )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
           text = "Select Video to Optimize",
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold,
-          color = androidx.compose.ui.graphics.Color.White
+          color = Color.White
         )
 
         Text(
-          text = "Choose from gallery or test with built-in FFmpeg demos",
+          text = "Liquid Engine auto-detects resolution & enforces CRF 20",
           style = MaterialTheme.typography.bodySmall,
-          color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
-          modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+          color = Color(0xFF94A3B8),
+          modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
         )
 
-        // Primary Picker Button
+        // Glass Action Button
         FilledTonalButton(
           onClick = {
             mediaPicker.launch(
@@ -134,17 +136,17 @@ fun VideoSelectorCard(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(52.dp)
             .testTag("pick_video_button"),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MintAccent,
-            contentColor = androidx.compose.ui.graphics.Color(0xFF003822)
+            contentColor = Color(0xFF003822)
           )
         ) {
           Icon(imageVector = Icons.Default.VideoFile, contentDescription = null)
           Spacer(modifier = Modifier.width(8.dp))
-          Text("Open Video Gallery", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+          Text("Choose from Gallery", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -155,16 +157,14 @@ fun VideoSelectorCard(
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           OutlinedButton(
-            onClick = { onLoadSample(false, false) },
+            onClick = { onLoadSample(false) },
             enabled = !isGeneratingSample,
             modifier = Modifier
               .weight(1f)
-              .height(44.dp)
+              .height(42.dp)
               .testTag("try_sample_15s_button"),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-              contentColor = androidx.compose.ui.graphics.Color(0xFFA7F3D0)
-            )
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA7F3D0))
           ) {
             if (isGeneratingSample) {
               CircularProgressIndicator(
@@ -173,37 +173,31 @@ fun VideoSelectorCard(
                 color = MintAccent
               )
             } else {
-              Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+              Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
               Spacer(modifier = Modifier.width(4.dp))
               Text("15s Demo", fontSize = 12.sp)
             }
           }
 
           OutlinedButton(
-            onClick = { onLoadSample(true, false) },
+            onClick = { onLoadSample(true) },
             enabled = !isGeneratingSample,
             modifier = Modifier
               .weight(1f)
-              .height(44.dp)
+              .height(42.dp)
               .testTag("try_sample_100s_button"),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-              contentColor = AmberWarning
-            )
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberWarning)
           ) {
-            Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("100s (Split Test)", fontSize = 12.sp)
+            Text("100s Split Demo", fontSize = 12.sp)
           }
         }
       }
     } else {
-      // Video Selected Card
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(16.dp)
-      ) {
+      // Video Selected Glass View
+      Column(modifier = Modifier.fillMaxWidth()) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
@@ -211,10 +205,16 @@ fun VideoSelectorCard(
           // Thumbnail Box
           Box(
             modifier = Modifier
-              .size(width = 80.dp, height = 96.dp)
-              .clip(RoundedCornerShape(12.dp))
-              .background(DarkSurfaceElevated)
-              .border(1.dp, DarkBorder, RoundedCornerShape(12.dp)),
+              .size(width = 84.dp, height = 100.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .background(Color.Black.copy(alpha = 0.4f))
+              .border(
+                androidx.compose.foundation.BorderStroke(
+                  1.dp,
+                  Color.White.copy(alpha = 0.15f)
+                ),
+                RoundedCornerShape(16.dp)
+              ),
             contentAlignment = Alignment.Center
           ) {
             if (selectedVideo.thumbnailBitmap != null) {
@@ -238,15 +238,15 @@ fun VideoSelectorCard(
               modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(4.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.75f))
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color.Black.copy(alpha = 0.75f))
                 .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
               Text(
                 text = selectedVideo.formattedDuration,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = androidx.compose.ui.graphics.Color.White
+                color = Color.White
               )
             }
           }
@@ -259,7 +259,7 @@ fun VideoSelectorCard(
               text = selectedVideo.fileName,
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.Bold,
-              color = androidx.compose.ui.graphics.Color.White,
+              color = Color.White,
               maxLines = 1
             )
 
@@ -270,9 +270,9 @@ fun VideoSelectorCard(
               horizontalArrangement = Arrangement.spacedBy(6.dp),
               verticalAlignment = Alignment.CenterVertically
             ) {
-              ChipBadge(text = selectedVideo.resolutionText)
-              ChipBadge(text = selectedVideo.formattedSize)
-              ChipBadge(text = "${selectedVideo.fps.toInt()} fps")
+              GlassPill(text = selectedVideo.resolutionText)
+              GlassPill(text = selectedVideo.formattedSize)
+              GlassPill(text = "${selectedVideo.fps.toInt()} fps")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -306,7 +306,7 @@ fun VideoSelectorCard(
                   text = "Single Status Clip (<= 90s)",
                   fontSize = 11.sp,
                   fontWeight = FontWeight.Medium,
-                  color = androidx.compose.ui.graphics.Color(0xFFA7F3D0)
+                  color = Color(0xFFA7F3D0)
                 )
               }
             }
@@ -327,7 +327,7 @@ fun VideoSelectorCard(
               )
             },
             modifier = Modifier.testTag("change_video_button"),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(10.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
           ) {
             Icon(imageVector = Icons.Default.ChangeCircle, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -337,22 +337,5 @@ fun VideoSelectorCard(
         }
       }
     }
-  }
-}
-
-@Composable
-fun ChipBadge(text: String) {
-  Box(
-    modifier = Modifier
-      .clip(RoundedCornerShape(6.dp))
-      .background(DarkSurfaceVariant)
-      .padding(horizontal = 6.dp, vertical = 3.dp)
-  ) {
-    Text(
-      text = text,
-      fontSize = 11.sp,
-      fontWeight = FontWeight.Medium,
-      color = androidx.compose.ui.graphics.Color(0xFFCBD5E1)
-    )
   }
 }
