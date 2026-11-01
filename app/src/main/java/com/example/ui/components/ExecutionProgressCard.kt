@@ -47,6 +47,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -337,7 +340,10 @@ fun ExecutionProgressCard(
         }
 
         is ProcessingState.Error -> {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          val context = androidx.compose.ui.platform.LocalContext.current
+          var showErrorLogs by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
               modifier = Modifier.fillMaxWidth(),
               verticalAlignment = Alignment.CenterVertically
@@ -351,7 +357,8 @@ fun ExecutionProgressCard(
               Text(
                 text = "Optimization Error",
                 color = Color(0xFFEF4444),
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
               )
             }
 
@@ -361,12 +368,77 @@ fun ExecutionProgressCard(
               color = Color(0xFFFCA5A5)
             )
 
-            Button(
-              onClick = onReset,
-              shape = RoundedCornerShape(8.dp),
-              colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
-            ) {
-              Text("Try Again", fontSize = 12.sp)
+            if (processingState.logs.isNotEmpty()) {
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clip(RoundedCornerShape(6.dp))
+                  .background(DarkSurfaceElevated)
+                  .clickable { showErrorLogs = !showErrorLogs }
+                  .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+              ) {
+                Text(
+                  text = if (showErrorLogs) "Hide Error Logs" else "Show Detailed FFmpeg Logs (${processingState.logs.size} lines)",
+                  fontSize = 11.sp,
+                  color = MintAccent,
+                  fontWeight = FontWeight.SemiBold
+                )
+                Icon(
+                  imageVector = if (showErrorLogs) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                  contentDescription = null,
+                  tint = MintAccent,
+                  modifier = Modifier.size(16.dp)
+                )
+              }
+
+              AnimatedVisibility(visible = showErrorLogs) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                  Box(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .height(140.dp)
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(DarkObsidian)
+                      .padding(8.dp)
+                  ) {
+                    LazyColumn {
+                      items(processingState.logs) { log ->
+                        Text(
+                          text = log,
+                          fontFamily = FontFamily.Monospace,
+                          fontSize = 9.sp,
+                          color = Color(0xFFF87171),
+                          lineHeight = 13.sp
+                        )
+                      }
+                    }
+                  }
+
+                  OutlinedButton(
+                    onClick = {
+                      val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                      cm.setPrimaryClip(android.content.ClipData.newPlainText("FFmpeg Error Logs", processingState.logs.joinToString("\n")))
+                      android.widget.Toast.makeText(context, "Error logs copied", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.height(36.dp),
+                    shape = RoundedCornerShape(8.dp)
+                  ) {
+                    Text("Copy Error Logs", fontSize = 11.sp)
+                  }
+                }
+              }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Button(
+                onClick = onReset,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MintAccent, contentColor = Color(0xFF003822))
+              ) {
+                Text("Try Again", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+              }
             }
           }
         }

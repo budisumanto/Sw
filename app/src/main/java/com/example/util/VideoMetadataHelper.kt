@@ -50,6 +50,8 @@ object VideoMetadataHelper {
           null
         }
 
+        val hasAudioStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO)
+        val hasAudio = hasAudioStr != null && (hasAudioStr == "yes" || hasAudioStr == "true" || hasAudioStr == "1")
         val fileName = getFileNameFromUri(context, uri) ?: tempFile.name
 
         VideoMetadata(
@@ -62,6 +64,7 @@ object VideoMetadataHelper {
           fps = 30.0,
           bitrateBps = bitrate,
           sizeBytes = tempFile.length(),
+          hasAudio = hasAudio,
           thumbnailBitmap = thumbnailBitmap
         )
       } catch (e: Exception) {
@@ -107,6 +110,9 @@ object VideoMetadataHelper {
           null
         }
 
+        val hasAudioStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO)
+        val hasAudio = hasAudioStr != null && (hasAudioStr == "yes" || hasAudioStr == "true" || hasAudioStr == "1")
+
         VideoMetadata(
           uri = null,
           filePath = file.absolutePath,
@@ -117,6 +123,7 @@ object VideoMetadataHelper {
           fps = 30.0,
           bitrateBps = bitrate,
           sizeBytes = file.length(),
+          hasAudio = hasAudio,
           thumbnailBitmap = thumbnail
         )
       } catch (e: Exception) {

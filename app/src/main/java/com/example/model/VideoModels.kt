@@ -14,6 +14,7 @@ data class VideoMetadata(
   val fps: Double = 30.0,
   val bitrateBps: Long = 0L,
   val sizeBytes: Long = 0L,
+  val hasAudio: Boolean = true,
   val thumbnailBitmap: Bitmap? = null
 ) {
   val formattedDuration: String
@@ -48,14 +49,14 @@ enum class ResolutionMode(
     label = "720p HD",
     badge = "Balanced & Fast",
     maxDimension = 720,
-    scaleFilter = "scale='min(720,iw)':-2",
+    scaleFilter = "scale='min(720,trunc(iw/2)*2)':-2",
     description = "Optimized for fast encoding and standard mobile display."
   ),
   CRISP_1080P(
     label = "1080p Crisp HD",
     badge = "Max Density",
     maxDimension = 1080,
-    scaleFilter = "scale='min(1080,iw)':-2",
+    scaleFilter = "scale='min(1080,trunc(iw/2)*2)':-2",
     description = "Packs maximum pixel sharpness within identical WhatsApp bitrate caps."
   )
 }

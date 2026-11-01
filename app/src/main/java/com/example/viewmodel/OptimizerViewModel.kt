@@ -123,7 +123,8 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       contentProfile = _contentProfile.value,
       isSegment = (video?.durationMs ?: 0L) > 90_000L && _forceAutoSplit.value,
       startSec = 0,
-      durationSec = 90
+      durationSec = 90,
+      hasAudio = video?.hasAudio ?: true
     )
   }
 

@@ -16,8 +16,8 @@ class ExampleUnitTest {
 
   @Test
   fun `resolution mode scale filters match specification`() {
-    assertEquals("scale='min(720,iw)':-2", ResolutionMode.HD_720P.scaleFilter)
-    assertEquals("scale='min(1080,iw)':-2", ResolutionMode.CRISP_1080P.scaleFilter)
+    assertEquals("scale='min(720,trunc(iw/2)*2)':-2", ResolutionMode.HD_720P.scaleFilter)
+    assertEquals("scale='min(1080,trunc(iw/2)*2)':-2", ResolutionMode.CRISP_1080P.scaleFilter)
   }
 
   @Test

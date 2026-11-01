@@ -37,6 +37,84 @@ class StatusHDOptimizerEngine(private val context: Context) {
     const val MAX_CHUNK_DURATION_MS = MAX_CHUNK_DURATION_SEC * 1000L
   }
 
+  fun buildExecutionArgs(
+    inputFile: String,
+    outputFile: String,
+    resolutionMode: ResolutionMode,
+    contentProfile: ContentProfile,
+    isSegment: Boolean = false,
+    startSec: Int = 0,
+    durationSec: Int = MAX_CHUNK_DURATION_SEC,
+    hasAudio: Boolean = true
+  ): Array<String> {
+    val args = mutableListOf<String>()
+    args.add("-y")
+
+    if (isSegment) {
+      args.add("-ss")
+      args.add(startSec.toString())
+    }
+
+    args.add("-i")
+    args.add(inputFile)
+
+    if (isSegment) {
+      args.add("-t")
+      args.add(durationSec.toString())
+    }
+
+    // Video stream mapping & filter
+    args.add("-map")
+    args.add("0:v:0")
+
+    args.add("-vf")
+    args.add(resolutionMode.scaleFilter)
+
+    // H.264 Video Codec & Profile parameters
+    args.add("-c:v")
+    args.add("libx264")
+    args.add("-crf")
+    args.add(contentProfile.crf.toString())
+    args.add("-preset")
+    args.add(contentProfile.preset)
+    args.add("-g")
+    args.add(contentProfile.gop.toString())
+    args.add("-maxrate")
+    args.add(contentProfile.maxrate)
+    args.add("-bufsize")
+    args.add(contentProfile.bufsize)
+    args.add("-pix_fmt")
+    args.add("yuv420p")
+
+    // Audio parameters (only if source has audio)
+    if (hasAudio) {
+      args.add("-map")
+      args.add("0:a:0?")
+      args.add("-c:a")
+      args.add("aac")
+      args.add("-b:a")
+      args.add("128k")
+      args.add("-ar")
+      args.add("44100")
+      args.add("-ac")
+      args.add("2")
+    } else {
+      args.add("-an")
+    }
+
+    // Suppress incompatible subtitle streams
+    args.add("-sn")
+
+    // Force faststart for WhatsApp instant playback
+    args.add("-movflags")
+    args.add("+faststart")
+
+    // Destination file
+    args.add(outputFile)
+
+    return args.toTypedArray()
+  }
+
   fun buildDisplayCommand(
     inputFile: String = "input.mp4",
     outputFile: String = "output.mp4",
@@ -44,26 +122,25 @@ class StatusHDOptimizerEngine(private val context: Context) {
     contentProfile: ContentProfile,
     isSegment: Boolean = false,
     startSec: Int = 0,
-    durationSec: Int = MAX_CHUNK_DURATION_SEC
+    durationSec: Int = MAX_CHUNK_DURATION_SEC,
+    hasAudio: Boolean = true
   ): String {
-    val seekParam = if (isSegment) "-ss $startSec -t $durationSec " else ""
-    return buildString {
-      append("ffmpeg -y ")
-      if (isSegment) append("-ss $startSec ")
-      append("-i \"$inputFile\" ")
-      if (isSegment) append("-t $durationSec ")
-      append("-vf \"${resolutionMode.scaleFilter}\" ")
-      append("-c:v libx264 ")
-      append("-crf ${contentProfile.crf} ")
-      append("-preset ${contentProfile.preset} ")
-      append("-g ${contentProfile.gop} ")
-      append("-maxrate ${contentProfile.maxrate} ")
-      append("-bufsize ${contentProfile.bufsize} ")
-      append("-pix_fmt yuv420p ")
-      append("-c:a aac ")
-      append("-b:a 128k ")
-      append("-movflags +faststart ")
-      append("\"$outputFile\"")
+    val args = buildExecutionArgs(
+      inputFile = inputFile,
+      outputFile = outputFile,
+      resolutionMode = resolutionMode,
+      contentProfile = contentProfile,
+      isSegment = isSegment,
+      startSec = startSec,
+      durationSec = durationSec,
+      hasAudio = hasAudio
+    )
+    return "ffmpeg " + args.joinToString(" ") { arg ->
+      if (arg.contains(" ") || arg.contains("'") || arg.contains("\"") || arg.contains(":")) {
+        "\"$arg\""
+      } else {
+        arg
+      }
     }
   }
 
@@ -89,7 +166,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
     val segments = mutableListOf<VideoSegment>()
     val startTimeMs = System.currentTimeMillis()
-    val logBuffer = ArrayDeque<String>(50)
+    val logBuffer = ArrayDeque<String>(60)
     var primaryCommandUsed = ""
 
     try {
@@ -110,22 +187,32 @@ class StatusHDOptimizerEngine(private val context: Context) {
         }
         val outputFile = File(outputDir, outputFileName)
 
-        val command = buildDisplayCommand(
+        val args = buildExecutionArgs(
           inputFile = inputFile.absolutePath,
           outputFile = outputFile.absolutePath,
           resolutionMode = resolutionMode,
           contentProfile = contentProfile,
           isSegment = shouldSplit,
           startSec = startSec,
-          durationSec = chunkDurationSec
+          durationSec = chunkDurationSec,
+          hasAudio = sourceVideo.hasAudio
         )
 
         if (chunkIndex == 0) {
-          primaryCommandUsed = command
+          primaryCommandUsed = buildDisplayCommand(
+            inputFile = inputFile.absolutePath,
+            outputFile = outputFile.absolutePath,
+            resolutionMode = resolutionMode,
+            contentProfile = contentProfile,
+            isSegment = shouldSplit,
+            startSec = startSec,
+            durationSec = chunkDurationSec,
+            hasAudio = sourceVideo.hasAudio
+          )
         }
 
-        val success = executeChunkSession(
-          command = command,
+        val success = executeChunkSessionWithArgs(
+          args = args,
           chunkIndex = chunkIndex + 1,
           totalChunks = chunkCount,
           chunkDurationMs = chunkDurationMs,
@@ -137,8 +224,10 @@ class StatusHDOptimizerEngine(private val context: Context) {
             _processingState.value = ProcessingState.Cancelled
             return@withContext null
           }
+          val lastLogs = logBuffer.takeLast(10).joinToString("\n")
           _processingState.value = ProcessingState.Error(
-            message = "Encoding failed on Part ${chunkIndex + 1}/$chunkCount. Check log details.",
+            message = if (lastLogs.isNotBlank()) "Encoding failed on Part ${chunkIndex + 1}/$chunkCount:\n$lastLogs"
+                      else "Encoding failed on Part ${chunkIndex + 1}/$chunkCount. Check log details.",
             logs = logBuffer.toList()
           )
           return@withContext null
@@ -199,8 +288,8 @@ class StatusHDOptimizerEngine(private val context: Context) {
     }
   }
 
-  private suspend fun executeChunkSession(
-    command: String,
+  private suspend fun executeChunkSessionWithArgs(
+    args: Array<String>,
     chunkIndex: Int,
     totalChunks: Int,
     chunkDurationMs: Long,
@@ -208,8 +297,8 @@ class StatusHDOptimizerEngine(private val context: Context) {
   ): Boolean = withContext(Dispatchers.IO) {
     val completionLatch = kotlinx.coroutines.CompletableDeferred<Boolean>()
 
-    val session = FFmpegKit.executeAsync(
-      command,
+    val session = FFmpegKit.executeWithArgumentsAsync(
+      args,
       { completedSession ->
         currentSession = null
         val code = completedSession.returnCode
@@ -219,6 +308,22 @@ class StatusHDOptimizerEngine(private val context: Context) {
           isCancelledByUser = true
           completionLatch.complete(false)
         } else {
+          // Failure: collect logs from completedSession
+          completedSession.allLogs?.forEach { l ->
+            val msg = l.message?.trim()
+            if (!msg.isNullOrBlank()) {
+              synchronized(logBuffer) {
+                if (logBuffer.size >= 60) logBuffer.removeFirst()
+                logBuffer.addLast(msg)
+              }
+            }
+          }
+          val stackTrace = completedSession.failStackTrace
+          if (!stackTrace.isNullOrBlank()) {
+            synchronized(logBuffer) {
+              logBuffer.addLast(stackTrace.trim())
+            }
+          }
           completionLatch.complete(false)
         }
       },
@@ -226,7 +331,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
         val msg = log.message?.trim()
         if (!msg.isNullOrBlank()) {
           synchronized(logBuffer) {
-            if (logBuffer.size >= 50) logBuffer.removeFirst()
+            if (logBuffer.size >= 60) logBuffer.removeFirst()
             logBuffer.addLast(msg)
           }
         }
