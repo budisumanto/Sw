@@ -6,7 +6,6 @@ import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
-import com.example.model.SmartEncodingConfig
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.util.VideoMetadataHelper
@@ -33,18 +32,31 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
   companion object {
     const val MAX_CHUNK_DURATION_SEC = 90
-    const val MAX_CHUNK_DURATION_MS = MAX_CHUNK_DURATION_SEC * 1000L
-  }
+    const val SCALE_FILTER = "scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2)"
 
-  fun buildExecutionArgs(
-    inputFile: String,
-    outputFile: String,
-    config: SmartEncodingConfig,
-    isSegment: Boolean = false,
-    startSec: Int = 0,
-    durationSec: Int = MAX_CHUNK_DURATION_SEC,
-    hasAudio: Boolean = true
-  ): Array<String> {
+    fun calculateMaxrateAndBufsize(sizeBytes: Long, durationMs: Long): Pair<Int, Int> {
+      val durationSec = (durationMs / 1000.0).coerceAtLeast(1.0)
+      val originalBitrateKbps = ((sizeBytes * 8.0) / durationSec) / 1000.0
+
+      val maxrate = when {
+        originalBitrateKbps > 6000.0 -> 6000
+        originalBitrateKbps < 500.0 -> 500
+        else -> originalBitrateKbps.toInt()
+      }
+      val bufsize = maxrate * 2
+      return Pair(maxrate, bufsize)
+    }
+
+    fun buildExecutionArgs(
+      inputFile: String,
+      outputFile: String,
+      maxrate: Int,
+      bufsize: Int,
+      isSegment: Boolean = false,
+      startSec: Int = 0,
+      durationSec: Int = MAX_CHUNK_DURATION_SEC,
+      hasAudio: Boolean = true
+    ): Array<String> {
     val args = mutableListOf<String>()
     args.add("-y")
 
@@ -66,25 +78,29 @@ class StatusHDOptimizerEngine(private val context: Context) {
     args.add("0:v:0")
 
     args.add("-vf")
-    args.add(config.scaleFilter)
+    args.add(SCALE_FILTER)
 
-    // H.264 Video Codec & Smart Parameters (CRF 20, 4000k maxrate, GOP 30)
+    // Codec & Tuning parameters (iOS Liquid Glass Engine spec)
     args.add("-c:v")
     args.add("libx264")
-    args.add("-crf")
-    args.add(config.crf.toString())
     args.add("-preset")
-    args.add(config.preset)
+    args.add("faster")
+    args.add("-tune")
+    args.add("film")
+    args.add("-x264-params")
+    args.add("aq-mode=3")
+    args.add("-crf")
+    args.add("20")
     args.add("-g")
-    args.add(config.gop.toString())
+    args.add("48")
     args.add("-maxrate")
-    args.add(config.maxrate)
+    args.add("${maxrate}k")
     args.add("-bufsize")
-    args.add(config.bufsize)
+    args.add("${bufsize}k")
     args.add("-pix_fmt")
     args.add("yuv420p")
 
-    // Audio parameters (only if source has audio)
+    // Audio parameters (AAC 128k stereo)
     if (hasAudio) {
       args.add("-map")
       args.add("0:a:0?")
@@ -103,189 +119,132 @@ class StatusHDOptimizerEngine(private val context: Context) {
     // Suppress incompatible subtitle streams
     args.add("-sn")
 
-    // Force faststart for WhatsApp instant playback
+    // Atom FastStart for instant playback
     args.add("-movflags")
     args.add("+faststart")
 
-    // Destination file
+    // Output path
     args.add(outputFile)
 
     return args.toTypedArray()
   }
+}
 
-  fun buildDisplayCommand(
-    inputFile: String = "input.mp4",
-    outputFile: String = "output.mp4",
-    config: SmartEncodingConfig,
-    isSegment: Boolean = false,
-    startSec: Int = 0,
-    durationSec: Int = MAX_CHUNK_DURATION_SEC,
-    hasAudio: Boolean = true
-  ): String {
-    val args = buildExecutionArgs(
-      inputFile = inputFile,
-      outputFile = outputFile,
-      config = config,
-      isSegment = isSegment,
-      startSec = startSec,
-      durationSec = durationSec,
-      hasAudio = hasAudio
-    )
-    return "ffmpeg " + args.joinToString(" ") { arg ->
-      if (arg.contains(" ") || arg.contains("'") || arg.contains("\"") || arg.contains(":")) {
-        "\"$arg\""
-      } else {
-        arg
+  suspend fun optimizeVideo(sourceVideo: VideoMetadata): OptimizationResult? =
+    withContext(Dispatchers.IO) {
+      isCancelledByUser = false
+      _processingState.value = ProcessingState.Preparing("Menyiapkan kualitas terbaik...")
+
+      val inputFile = File(sourceVideo.filePath)
+      if (!inputFile.exists()) {
+        _processingState.value = ProcessingState.Error("Video tidak dapat ditemukan. Coba pilih video lain.")
+        return@withContext null
       }
-    }
-  }
 
-  suspend fun optimizeVideo(
-    sourceVideo: VideoMetadata,
-    forceAutoSplit: Boolean = true
-  ): OptimizationResult? = withContext(Dispatchers.IO) {
-    isCancelledByUser = false
-    _processingState.value = ProcessingState.Preparing("Analyzing video & preparing smart liquid encode...")
+      val (maxrate, bufsize) = calculateMaxrateAndBufsize(sourceVideo.sizeBytes, sourceVideo.durationMs)
+      val outputDir = File(context.cacheDir, "status_hd_output_${System.currentTimeMillis()}").apply { mkdirs() }
+      val totalDurationSec = (sourceVideo.durationMs / 1000).toInt().coerceAtLeast(1)
+      val shouldSplit = totalDurationSec > MAX_CHUNK_DURATION_SEC
+      val chunkCount = if (shouldSplit) ceil(totalDurationSec / MAX_CHUNK_DURATION_SEC.toDouble()).toInt() else 1
 
-    val inputFile = File(sourceVideo.filePath)
-    if (!inputFile.exists()) {
-      _processingState.value = ProcessingState.Error("Input file not found at ${sourceVideo.filePath}")
-      return@withContext null
-    }
+      val segments = mutableListOf<VideoSegment>()
+      val startTimeMs = System.currentTimeMillis()
 
-    val smartConfig = SmartEncodingConfig.computeSmartConfig(sourceVideo)
-    val outputDir = File(context.cacheDir, "status_hd_output_${System.currentTimeMillis()}").apply { mkdirs() }
-    val totalDurationSec = (sourceVideo.durationMs / 1000).toInt().coerceAtLeast(1)
-    val shouldSplit = forceAutoSplit && totalDurationSec > MAX_CHUNK_DURATION_SEC
-    val chunkCount = if (shouldSplit) ceil(totalDurationSec / MAX_CHUNK_DURATION_SEC.toDouble()).toInt() else 1
+      try {
+        for (chunkIndex in 0 until chunkCount) {
+          if (isCancelledByUser) {
+            _processingState.value = ProcessingState.Cancelled
+            return@withContext null
+          }
 
-    val segments = mutableListOf<VideoSegment>()
-    val startTimeMs = System.currentTimeMillis()
-    val logBuffer = ArrayDeque<String>(60)
-    var primaryCommandUsed = ""
+          val startSec = chunkIndex * MAX_CHUNK_DURATION_SEC
+          val chunkDurationSec = min(MAX_CHUNK_DURATION_SEC, totalDurationSec - startSec)
+          val chunkDurationMs = chunkDurationSec * 1000L
 
-    try {
-      for (chunkIndex in 0 until chunkCount) {
-        if (isCancelledByUser) {
-          _processingState.value = ProcessingState.Cancelled
-          return@withContext null
-        }
+          val outputFileName = if (chunkCount > 1) {
+            "status_part_${chunkIndex + 1}_of_${chunkCount}.mp4"
+          } else {
+            "status_${sourceVideo.fileName.substringBeforeLast(".")}_hd.mp4"
+          }
+          val outputFile = File(outputDir, outputFileName)
 
-        val startSec = chunkIndex * MAX_CHUNK_DURATION_SEC
-        val chunkDurationSec = min(MAX_CHUNK_DURATION_SEC, totalDurationSec - startSec)
-        val chunkDurationMs = chunkDurationSec * 1000L
-
-        val outputFileName = if (chunkCount > 1) {
-          "status_part_${chunkIndex + 1}_of_${chunkCount}.mp4"
-        } else {
-          "status_${sourceVideo.fileName.substringBeforeLast(".")}_hd.mp4"
-        }
-        val outputFile = File(outputDir, outputFileName)
-
-        val args = buildExecutionArgs(
-          inputFile = inputFile.absolutePath,
-          outputFile = outputFile.absolutePath,
-          config = smartConfig,
-          isSegment = shouldSplit,
-          startSec = startSec,
-          durationSec = chunkDurationSec,
-          hasAudio = sourceVideo.hasAudio
-        )
-
-        if (chunkIndex == 0) {
-          primaryCommandUsed = buildDisplayCommand(
+          val args = buildExecutionArgs(
             inputFile = inputFile.absolutePath,
             outputFile = outputFile.absolutePath,
-            config = smartConfig,
+            maxrate = maxrate,
+            bufsize = bufsize,
             isSegment = shouldSplit,
             startSec = startSec,
             durationSec = chunkDurationSec,
             hasAudio = sourceVideo.hasAudio
           )
-        }
 
-        val success = executeChunkSessionWithArgs(
-          args = args,
-          chunkIndex = chunkIndex + 1,
-          totalChunks = chunkCount,
-          chunkDurationMs = chunkDurationMs,
-          logBuffer = logBuffer
-        )
+          val success = executeChunk(
+            args = args,
+            chunkIndex = chunkIndex + 1,
+            totalChunks = chunkCount,
+            chunkDurationMs = chunkDurationMs
+          )
 
-        if (!success) {
-          if (isCancelledByUser) {
-            _processingState.value = ProcessingState.Cancelled
+          if (!success) {
+            if (isCancelledByUser) {
+              _processingState.value = ProcessingState.Cancelled
+              return@withContext null
+            }
+            _processingState.value = ProcessingState.Error("Video tidak dapat diproses. Coba pilih video lain.")
             return@withContext null
           }
-          val lastLogs = logBuffer.takeLast(10).joinToString("\n")
-          _processingState.value = ProcessingState.Error(
-            message = if (lastLogs.isNotBlank()) "Encoding failed on Part ${chunkIndex + 1}/$chunkCount:\n$lastLogs"
-                      else "Encoding failed on Part ${chunkIndex + 1}/$chunkCount. Check log details.",
-            logs = logBuffer.toList()
+
+          if (!outputFile.exists() || outputFile.length() <= 0) {
+            _processingState.value = ProcessingState.Error("Video tidak dapat diproses. Coba pilih video lain.")
+            return@withContext null
+          }
+
+          val segmentThumb = VideoMetadataHelper.getThumbnailForFile(outputFile)
+          val segment = VideoSegment(
+            partIndex = chunkIndex + 1,
+            totalParts = chunkCount,
+            file = outputFile,
+            durationMs = chunkDurationMs,
+            sizeBytes = outputFile.length(),
+            startSec = startSec,
+            endSec = startSec + chunkDurationSec,
+            thumbnailBitmap = segmentThumb
           )
-          return@withContext null
+          segments.add(segment)
         }
 
-        // Verify output file was created and is non-empty
-        if (!outputFile.exists() || outputFile.length() <= 0) {
-          _processingState.value = ProcessingState.Error(
-            message = "Output file was not produced for Part ${chunkIndex + 1}.",
-            logs = logBuffer.toList()
-          )
-          return@withContext null
+        val executionDurationMs = System.currentTimeMillis() - startTimeMs
+        val totalOptimizedSize = segments.sumOf { it.sizeBytes }
+
+        val finalResult = OptimizationResult(
+          segments = segments,
+          originalSizeBytes = sourceVideo.sizeBytes,
+          totalOptimizedSizeBytes = totalOptimizedSize,
+          executionDurationMs = executionDurationMs
+        )
+
+        _processingState.value = ProcessingState.Success(finalResult)
+        finalResult
+      } catch (e: Exception) {
+        if (e is CancellationException || isCancelledByUser) {
+          _processingState.value = ProcessingState.Cancelled
+          null
+        } else {
+          e.printStackTrace()
+          _processingState.value = ProcessingState.Error("Video tidak dapat diproses. Coba pilih video lain.")
+          null
         }
-
-        val segmentThumb = VideoMetadataHelper.getThumbnailForFile(outputFile)
-        val segment = VideoSegment(
-          partIndex = chunkIndex + 1,
-          totalParts = chunkCount,
-          file = outputFile,
-          durationMs = chunkDurationMs,
-          sizeBytes = outputFile.length(),
-          startSec = startSec,
-          endSec = startSec + chunkDurationSec,
-          thumbnailBitmap = segmentThumb
-        )
-        segments.add(segment)
+      } finally {
+        currentSession = null
       }
-
-      val executionDurationMs = System.currentTimeMillis() - startTimeMs
-      val totalOptimizedSize = segments.sumOf { it.sizeBytes }
-
-      val finalResult = OptimizationResult(
-        segments = segments,
-        originalSizeBytes = sourceVideo.sizeBytes,
-        totalOptimizedSizeBytes = totalOptimizedSize,
-        executionDurationMs = executionDurationMs,
-        commandUsed = primaryCommandUsed,
-        smartConfig = smartConfig
-      )
-
-      _processingState.value = ProcessingState.Success(finalResult)
-      finalResult
-    } catch (e: Exception) {
-      if (e is CancellationException || isCancelledByUser) {
-        _processingState.value = ProcessingState.Cancelled
-        null
-      } else {
-        e.printStackTrace()
-        _processingState.value = ProcessingState.Error(
-          message = e.localizedMessage ?: "Unknown optimization error occurred",
-          logs = logBuffer.toList()
-        )
-        null
-      }
-    } finally {
-      currentSession = null
     }
-  }
 
-  private suspend fun executeChunkSessionWithArgs(
+  private suspend fun executeChunk(
     args: Array<String>,
     chunkIndex: Int,
     totalChunks: Int,
-    chunkDurationMs: Long,
-    logBuffer: ArrayDeque<String>
+    chunkDurationMs: Long
   ): Boolean = withContext(Dispatchers.IO) {
     val completionLatch = kotlinx.coroutines.CompletableDeferred<Boolean>()
 
@@ -300,39 +259,12 @@ class StatusHDOptimizerEngine(private val context: Context) {
           isCancelledByUser = true
           completionLatch.complete(false)
         } else {
-          completedSession.allLogs?.forEach { l ->
-            val msg = l.message?.trim()
-            if (!msg.isNullOrBlank()) {
-              synchronized(logBuffer) {
-                if (logBuffer.size >= 60) logBuffer.removeFirst()
-                logBuffer.addLast(msg)
-              }
-            }
-          }
-          val stackTrace = completedSession.failStackTrace
-          if (!stackTrace.isNullOrBlank()) {
-            synchronized(logBuffer) {
-              logBuffer.addLast(stackTrace.trim())
-            }
-          }
           completionLatch.complete(false)
         }
       },
-      { log ->
-        val msg = log.message?.trim()
-        if (!msg.isNullOrBlank()) {
-          synchronized(logBuffer) {
-            if (logBuffer.size >= 60) logBuffer.removeFirst()
-            logBuffer.addLast(msg)
-          }
-        }
-      },
+      { /* Silent logs on front-end */ },
       { stats ->
         val timeMs = stats.time.toLong()
-        val fps = stats.videoFps.toDouble()
-        val speed = stats.speed
-        val bitrate = stats.bitrate
-
         val chunkProgress = if (chunkDurationMs > 0) {
           (timeMs.toFloat() / chunkDurationMs.toFloat()).coerceIn(0f, 1f)
         } else 0f
@@ -341,9 +273,10 @@ class StatusHDOptimizerEngine(private val context: Context) {
         val currentChunkFraction = chunkProgress / totalChunks.toFloat()
         val overallProgress = (completedChunksFraction + currentChunkFraction).coerceIn(0f, 1f)
 
-        val recentLogsSnapshot: List<String>
-        synchronized(logBuffer) {
-          recentLogsSnapshot = logBuffer.takeLast(15)
+        val statusText = if (totalChunks > 1) {
+          "Memproses bagian $chunkIndex dari $totalChunks..."
+        } else {
+          "Menyiapkan kualitas terbaik..."
         }
 
         _processingState.value = ProcessingState.Compressing(
@@ -351,11 +284,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
           totalChunks = totalChunks,
           chunkProgress = chunkProgress,
           overallProgress = overallProgress,
-          currentFps = fps,
-          speed = speed,
-          timeRenderedMs = timeMs,
-          currentBitrateKbps = bitrate,
-          recentLogs = recentLogsSnapshot
+          statusText = statusText
         )
       }
     )

@@ -30,10 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.model.ProcessingState
-import com.example.ui.components.CommandInspectorCard
 import com.example.ui.components.ExecutionProgressCard
 import com.example.ui.components.ResultDisplayCard
-import com.example.ui.components.SmartEngineGlassCard
 import com.example.ui.components.TopBarHeader
 import com.example.ui.components.VideoPlayerDialog
 import com.example.ui.components.VideoSelectorCard
@@ -48,15 +46,8 @@ fun StatusHDOptimizerScreen(
   val context = LocalContext.current
 
   val selectedVideo by viewModel.selectedVideo.collectAsState()
-  val smartConfig by viewModel.smartConfig.collectAsState()
-  val autoSplitEnabled by viewModel.forceAutoSplit.collectAsState()
   val processingState by viewModel.processingState.collectAsState()
-  val isCommandExpanded by viewModel.isCommandInspectorExpanded.collectAsState()
-  val isLogsExpanded by viewModel.isLiveLogsExpanded.collectAsState()
-  val isGeneratingSample by viewModel.isGeneratingSample.collectAsState()
   val previewSegment by viewModel.previewSegment.collectAsState()
-
-  val generatedCommand = viewModel.getGeneratedCommand()
 
   Scaffold(
     modifier = modifier
@@ -66,16 +57,16 @@ fun StatusHDOptimizerScreen(
     contentWindowInsets = WindowInsets.safeDrawing,
     containerColor = DarkObsidian
   ) { innerPadding ->
-    // Liquid Glass Ambient Background Mesh
+    // iOS Liquid Glass Canvas with subtle emerald radial aura
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(
           Brush.verticalGradient(
             listOf(
-              Color(0xFF07120D),
+              Color(0xFF0C1914),
               DarkObsidian,
-              Color(0xFF050E0B)
+              Color(0xFF070D0B)
             )
           )
         )
@@ -86,48 +77,30 @@ fun StatusHDOptimizerScreen(
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .widthIn(max = 640.dp)
+          .widthIn(max = 600.dp)
           .verticalScroll(rememberScrollState())
-          .padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+          .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
-        // App Header
+        // 1. Header Minimalis
         TopBarHeader()
 
-        // 1. Media Selector (Liquid Glass)
+        // 2. Area Pemilihan Video
         VideoSelectorCard(
           selectedVideo = selectedVideo,
-          isGeneratingSample = isGeneratingSample,
-          onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) },
-          onLoadSample = { isLong -> viewModel.onLoadSampleVideo(context, isLong) }
+          onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) }
         )
 
-        // 2. Smart Engine Glass Card (Auto-detected resolution, CRF 20, 4000k limit)
-        SmartEngineGlassCard(
-          config = smartConfig,
-          autoSplitEnabled = autoSplitEnabled,
-          onAutoSplitToggled = { enabled -> viewModel.setForceAutoSplit(enabled) }
-        )
-
-        // 3. Dynamic Command Inspector (Liquid Glass)
-        CommandInspectorCard(
-          command = generatedCommand,
-          isExpanded = isCommandExpanded,
-          onToggleExpand = { viewModel.toggleCommandInspector() }
-        )
-
-        // 4. Execution & Status View (Liquid Glass Action Button & Progress)
+        // 3. Tombol Aksi Utama & Status Berjalan
         ExecutionProgressCard(
           processingState = processingState,
-          isLogsExpanded = isLogsExpanded,
           hasVideoSelected = selectedVideo != null,
           onStartOptimize = { viewModel.startOptimization(context) },
           onCancel = { viewModel.cancelOptimization() },
-          onReset = { viewModel.resetOptimization() },
-          onToggleLogs = { viewModel.toggleLiveLogs() }
+          onReset = { viewModel.resetOptimization() }
         )
 
-        // 5. Result Display (Liquid Glass)
+        // 4. Hasil & Opsi Berbagi
         AnimatedVisibility(
           visible = processingState is ProcessingState.Success,
           enter = fadeIn(),
@@ -141,15 +114,16 @@ fun StatusHDOptimizerScreen(
               onShareAll = { segments -> viewModel.shareAll(context, segments) },
               onSaveToGallery = { segment -> viewModel.saveSegment(context, segment) },
               onSaveAllToGallery = { segments -> viewModel.saveAllSegments(context, segments) },
-              onPreviewSegment = { segment -> viewModel.setPreviewSegment(segment) }
+              onPreviewSegment = { segment -> viewModel.setPreviewSegment(segment) },
+              onReset = { viewModel.resetOptimization() }
             )
           }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
       }
 
-      // Video Player Dialog overlay
+      // Dialog Pratinjau Pemutar Video
       previewSegment?.let { segment ->
         VideoPlayerDialog(
           segment = segment,

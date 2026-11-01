@@ -7,20 +7,14 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.engine.StatusHDOptimizerEngine
-import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
-import com.example.model.SmartEncodingConfig
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.util.ExportHelper
-import com.example.util.SampleVideoHelper
 import com.example.util.VideoMetadataHelper
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,30 +24,10 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
 
-  // Smart config is automatically derived from the selected video
-  val smartConfig: StateFlow<SmartEncodingConfig> = _selectedVideo
-    .map { video ->
-      if (video != null) SmartEncodingConfig.computeSmartConfig(video)
-      else SmartEncodingConfig.createDefault()
-    }
-    .stateIn(viewModelScope, SharingStarted.Eagerly, SmartEncodingConfig.createDefault())
-
-  private val _forceAutoSplit = MutableStateFlow(true)
-  val forceAutoSplit: StateFlow<Boolean> = _forceAutoSplit.asStateFlow()
-
   val processingState: StateFlow<ProcessingState> = engine.processingState
-
-  private val _isCommandInspectorExpanded = MutableStateFlow(false)
-  val isCommandInspectorExpanded: StateFlow<Boolean> = _isCommandInspectorExpanded.asStateFlow()
-
-  private val _isLiveLogsExpanded = MutableStateFlow(false)
-  val isLiveLogsExpanded: StateFlow<Boolean> = _isLiveLogsExpanded.asStateFlow()
 
   private val _previewSegment = MutableStateFlow<VideoSegment?>(null)
   val previewSegment: StateFlow<VideoSegment?> = _previewSegment.asStateFlow()
-
-  private val _isGeneratingSample = MutableStateFlow(false)
-  val isGeneratingSample: StateFlow<Boolean> = _isGeneratingSample.asStateFlow()
 
   fun onVideoSelected(uri: Uri, context: Context) {
     viewModelScope.launch {
@@ -62,67 +36,15 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedVideo.value = meta
         engine.resetToIdle()
       } else {
-        Toast.makeText(context, "Could not load video metadata", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Video tidak dapat dimuat", Toast.LENGTH_SHORT).show()
       }
     }
-  }
-
-  fun onLoadSampleVideo(context: Context, longDuration: Boolean = false) {
-    viewModelScope.launch {
-      _isGeneratingSample.value = true
-      Toast.makeText(context, "Preparing liquid demo video...", Toast.LENGTH_SHORT).show()
-      val duration = if (longDuration) 100 else 15
-      val file = SampleVideoHelper.generateSampleVideo(context, duration, false)
-      _isGeneratingSample.value = false
-      if (file != null) {
-        val meta = VideoMetadataHelper.extractMetadataFromFile(file)
-        if (meta != null) {
-          _selectedVideo.value = meta
-          engine.resetToIdle()
-        }
-      } else {
-        Toast.makeText(context, "Failed to generate sample video", Toast.LENGTH_SHORT).show()
-      }
-    }
-  }
-
-  fun setForceAutoSplit(enabled: Boolean) {
-    _forceAutoSplit.value = enabled
-  }
-
-  fun toggleCommandInspector() {
-    _isCommandInspectorExpanded.value = !_isCommandInspectorExpanded.value
-  }
-
-  fun toggleLiveLogs() {
-    _isLiveLogsExpanded.value = !_isLiveLogsExpanded.value
-  }
-
-  fun getGeneratedCommand(): String {
-    val video = _selectedVideo.value
-    val inputPath = video?.filePath ?: "input.mp4"
-    val outputPath = if (video != null) {
-      "status_${video.fileName.substringBeforeLast(".")}_hd.mp4"
-    } else "status_output_hd.mp4"
-
-    return engine.buildDisplayCommand(
-      inputFile = inputPath,
-      outputFile = outputPath,
-      config = smartConfig.value,
-      isSegment = (video?.durationMs ?: 0L) > 90_000L && _forceAutoSplit.value,
-      startSec = 0,
-      durationSec = 90,
-      hasAudio = video?.hasAudio ?: true
-    )
   }
 
   fun startOptimization(context: Context) {
     val video = _selectedVideo.value ?: return
     viewModelScope.launch {
-      engine.optimizeVideo(
-        sourceVideo = video,
-        forceAutoSplit = _forceAutoSplit.value
-      )
+      engine.optimizeVideo(sourceVideo = video)
     }
   }
 
@@ -138,9 +60,9 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     viewModelScope.launch {
       val success = ExportHelper.saveToGallery(context, segment.file)
       if (success) {
-        Toast.makeText(context, "Saved to Movies/StatusHD", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Disimpan ke Galeri (Movies/StatusHD)", Toast.LENGTH_SHORT).show()
       } else {
-        Toast.makeText(context, "Failed to save to gallery", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Gagal menyimpan ke galeri", Toast.LENGTH_SHORT).show()
       }
     }
   }
@@ -153,7 +75,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
           savedCount++
         }
       }
-      Toast.makeText(context, "Saved $savedCount parts to Movies/StatusHD", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Berhasil menyimpan $savedCount bagian ke Galeri", Toast.LENGTH_SHORT).show()
     }
   }
 

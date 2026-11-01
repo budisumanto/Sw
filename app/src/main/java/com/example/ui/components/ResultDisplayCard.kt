@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -33,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,9 +56,10 @@ fun ResultDisplayCard(
   onSaveToGallery: (VideoSegment) -> Unit,
   onSaveAllToGallery: (List<VideoSegment>) -> Unit,
   onPreviewSegment: (VideoSegment) -> Unit,
+  onReset: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  LiquidGlassCard(
+  LiquidGlassBox(
     modifier = modifier
       .fillMaxWidth()
       .testTag("result_display_card")
@@ -67,144 +68,116 @@ fun ResultDisplayCard(
       modifier = Modifier.fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // Header: Success & Bypass Verified
+      // Header: Video Siap Dibagikan!
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Box(
-            modifier = Modifier
-              .size(38.dp)
-              .clip(CircleShape)
-              .background(MintAccent),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.Check,
-              contentDescription = null,
-              tint = Color(0xFF003822),
-              modifier = Modifier.size(24.dp)
-            )
-          }
-
-          Spacer(modifier = Modifier.width(10.dp))
-
-          Column {
-            Text(
-              text = "Optimization Complete",
-              style = MaterialTheme.typography.titleMedium,
-              fontWeight = FontWeight.Bold,
-              color = Color.White
-            )
-            Text(
-              text = "CRF 20 • ${result.smartConfig.targetResolutionLabel}",
-              fontSize = 11.sp,
-              color = Color(0xFFA7F3D0)
-            )
-          }
-        }
-
         Box(
           modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF064E3B).copy(alpha = 0.8f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(MintAccent),
+          contentAlignment = Alignment.Center
         ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-              imageVector = Icons.Default.Verified,
-              contentDescription = null,
-              tint = MintAccent,
-              modifier = Modifier.size(14.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-              text = "BYPASS VERIFIED",
-              fontSize = 10.sp,
-              fontWeight = FontWeight.ExtraBold,
-              color = MintAccent
-            )
-          }
+          Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = null,
+            tint = Color(0xFF003822),
+            modifier = Modifier.size(24.dp)
+          )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column {
+          Text(
+            text = "Video Siap Dibagikan!",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+          )
+          Text(
+            text = "Kualitas dioptimalkan tanpa kompresi buram",
+            fontSize = 12.sp,
+            color = Color(0xFFA7F3D0)
+          )
         }
       }
 
-      // Comparison Metrics Bar: Original vs Final Size
-      Row(
+      // Ringkasan Perbandingan Ukuran Simpel
+      Box(
         modifier = Modifier
           .fillMaxWidth()
-          .clip(RoundedCornerShape(16.dp))
+          .clip(RoundedCornerShape(18.dp))
           .background(Color.White.copy(alpha = 0.05f))
-          .padding(14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+          .border(BorderStroke(1.dp, GlassBorderTopHighlight), RoundedCornerShape(18.dp))
+          .padding(16.dp)
       ) {
-        Column {
-          Text(text = "Original Size", fontSize = 11.sp, color = Color(0xFF94A3B8))
-          Text(
-            text = result.formattedOriginalSize,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFCBD5E1)
-          )
-        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(text = "Ukuran Asli", fontSize = 11.sp, color = Color(0xFF94A3B8))
+              Text(
+                text = result.formattedOriginalSize,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+              )
+            }
 
-        Box(
-          modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF0C2B24).copy(alpha = 0.9f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-        ) {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "➔", fontSize = 16.sp, color = MintAccent, fontWeight = FontWeight.Bold)
+
+            Column(horizontalAlignment = Alignment.End) {
+              Text(text = "Ukuran Optimal", fontSize = 11.sp, color = Color(0xFF94A3B8))
+              Text(
+                text = result.formattedOptimizedSize,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MintAccent
+              )
+            }
+          }
+
+          if (result.savedPercentage > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-              text = "${result.segments.size} Part${if (result.segments.size > 1) "s" else ""}",
-              fontSize = 10.sp,
-              color = MintAccent,
-              fontWeight = FontWeight.Bold
-            )
-            Text(
-              text = if (result.savedPercentage > 0) "-${result.savedPercentage}%" else "HD Enhanced",
+              text = "Hemat ${result.savedPercentage}% tanpa turun kualitas",
               fontSize = 12.sp,
-              fontWeight = FontWeight.ExtraBold,
-              color = Color.White
+              color = Color(0xFFA7F3D0),
+              fontWeight = FontWeight.SemiBold
             )
           }
         }
+      }
 
-        Column(horizontalAlignment = Alignment.End) {
-          Text(text = "Optimized Size", fontSize = 11.sp, color = Color(0xFF94A3B8))
-          Text(
-            text = result.formattedOptimizedSize,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = MintAccent
-          )
+      // Daftar Klip (Jika Video Terbagi > 90 detik)
+      if (result.segments.size > 1) {
+        Text(
+          text = "Bagian Video (${result.segments.size} Klip):",
+          fontSize = 13.sp,
+          fontWeight = FontWeight.SemiBold,
+          color = Color.White
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          result.segments.forEach { segment ->
+            LiquidSegmentRow(
+              segment = segment,
+              onShare = { onShareToWhatsApp(segment) },
+              onSave = { onSaveToGallery(segment) },
+              onPreview = { onPreviewSegment(segment) }
+            )
+          }
         }
       }
 
-      // Segment List
-      Text(
-        text = "STATUS SEGMENTS",
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFF94A3B8),
-        letterSpacing = 0.5.sp
-      )
-
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        result.segments.forEach { segment ->
-          LiquidSegmentItem(
-            segment = segment,
-            onShare = { onShareToWhatsApp(segment) },
-            onSave = { onSaveToGallery(segment) },
-            onPreview = { onPreviewSegment(segment) }
-          )
-        }
-      }
-
-      // Primary Action: Share directly to WhatsApp Status
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      // Tombol Utama: Kirim ke Status WhatsApp
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(
           onClick = {
             if (result.segments.size == 1) {
@@ -215,9 +188,9 @@ fun ResultDisplayCard(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp)
+            .height(56.dp)
             .testTag("share_whatsapp_status_button"),
-          shape = RoundedCornerShape(16.dp),
+          shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = MintAccent,
             contentColor = Color(0xFF003822)
@@ -230,33 +203,50 @@ fun ResultDisplayCard(
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = if (result.segments.size == 1) "Share to WhatsApp Status" else "Share All (${result.segments.size} Parts) to WhatsApp",
-            fontWeight = FontWeight.Black,
+            text = if (result.segments.size == 1) "Kirim ke Status WhatsApp" else "Kirim Semua (${result.segments.size} Bagian) ke Status",
+            fontWeight = FontWeight.Bold,
             fontSize = 15.sp
           )
         }
 
-        // Secondary: Save All to Gallery
+        // Tombol Kedua: Simpan ke Galeri
         OutlinedButton(
           onClick = { onSaveAllToGallery(result.segments) },
           modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(50.dp)
             .testTag("save_to_gallery_button"),
-          shape = RoundedCornerShape(14.dp),
-          border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+          shape = RoundedCornerShape(18.dp),
+          border = BorderStroke(1.dp, GlassBorderTopHighlight)
         ) {
           Icon(
             imageVector = Icons.Default.Download,
             contentDescription = null,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(18.dp),
+            tint = Color.White
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = "Save to Gallery (Movies/StatusHD)",
+            text = "Simpan ke Galeri",
             fontWeight = FontWeight.SemiBold,
-            color = Color.White
+            color = Color.White,
+            fontSize = 14.sp
           )
+        }
+
+        // Teks kecil: Proses video lainnya
+        Box(
+          modifier = Modifier.fillMaxWidth(),
+          contentAlignment = Alignment.Center
+        ) {
+          TextButton(onClick = onReset) {
+            Text(
+              text = "Proses video lainnya",
+              color = Color(0xFF94A3B8),
+              fontSize = 13.sp,
+              fontWeight = FontWeight.Medium
+            )
+          }
         }
       }
     }
@@ -264,7 +254,7 @@ fun ResultDisplayCard(
 }
 
 @Composable
-fun LiquidSegmentItem(
+fun LiquidSegmentRow(
   segment: VideoSegment,
   onShare: () -> Unit,
   onSave: () -> Unit,
@@ -273,17 +263,17 @@ fun LiquidSegmentItem(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(14.dp))
+      .clip(RoundedCornerShape(16.dp))
       .background(Color.White.copy(alpha = 0.05f))
-      .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(14.dp))
+      .border(BorderStroke(1.dp, GlassBorderTopHighlight), RoundedCornerShape(16.dp))
       .padding(10.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    // Thumbnail preview with play icon
+    // Thumbnail preview
     Box(
       modifier = Modifier
-        .size(width = 56.dp, height = 56.dp)
-        .clip(RoundedCornerShape(10.dp))
+        .size(width = 54.dp, height = 54.dp)
+        .clip(RoundedCornerShape(12.dp))
         .background(Color.Black.copy(alpha = 0.5f))
         .clickable(onClick = onPreview),
       contentAlignment = Alignment.Center
@@ -291,7 +281,7 @@ fun LiquidSegmentItem(
       if (segment.thumbnailBitmap != null) {
         Image(
           bitmap = segment.thumbnailBitmap.asImageBitmap(),
-          contentDescription = "Segment Thumbnail",
+          contentDescription = "Pratinjau Bagian",
           modifier = Modifier.fillMaxSize(),
           contentScale = ContentScale.Crop
         )
@@ -306,16 +296,16 @@ fun LiquidSegmentItem(
 
       Box(
         modifier = Modifier
-          .size(24.dp)
+          .size(22.dp)
           .clip(CircleShape)
           .background(Color.Black.copy(alpha = 0.65f)),
         contentAlignment = Alignment.Center
       ) {
         Icon(
           imageVector = Icons.Default.PlayArrow,
-          contentDescription = "Preview",
+          contentDescription = "Putar",
           tint = Color.White,
-          modifier = Modifier.size(16.dp)
+          modifier = Modifier.size(14.dp)
         )
       }
     }
@@ -324,9 +314,9 @@ fun LiquidSegmentItem(
 
     Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = "Part ${segment.partIndex} of ${segment.totalParts}",
+        text = "Bagian ${segment.partIndex} dari ${segment.totalParts}",
         fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
+        fontSize = 13.sp,
         color = Color.White
       )
       Text(
@@ -339,13 +329,11 @@ fun LiquidSegmentItem(
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       IconButton(
         onClick = onSave,
-        modifier = Modifier
-          .size(36.dp)
-          .testTag("save_segment_${segment.partIndex}")
+        modifier = Modifier.size(36.dp)
       ) {
         Icon(
           imageVector = Icons.Default.Save,
-          contentDescription = "Save segment",
+          contentDescription = "Simpan",
           tint = Color(0xFF94A3B8),
           modifier = Modifier.size(18.dp)
         )
@@ -353,13 +341,11 @@ fun LiquidSegmentItem(
 
       IconButton(
         onClick = onShare,
-        modifier = Modifier
-          .size(36.dp)
-          .testTag("share_segment_${segment.partIndex}")
+        modifier = Modifier.size(36.dp)
       ) {
         Icon(
           imageVector = Icons.Default.Share,
-          contentDescription = "Share segment",
+          contentDescription = "Bagikan",
           tint = MintAccent,
           modifier = Modifier.size(18.dp)
         )
