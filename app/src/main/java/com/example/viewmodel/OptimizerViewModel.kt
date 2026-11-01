@@ -7,9 +7,11 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.engine.StatusHDOptimizerEngine
+import com.example.model.LinkedWhatsAppAccount
 import com.example.model.ProcessingState
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
+import com.example.model.normalizePhoneNumber
 import com.example.util.ExportHelper
 import com.example.util.VideoMetadataHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.launch
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
 
   private val engine = StatusHDOptimizerEngine(application)
+  private val prefs = application.getSharedPreferences("status_hd_prefs", Context.MODE_PRIVATE)
 
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
@@ -28,6 +31,78 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   private val _previewSegment = MutableStateFlow<VideoSegment?>(null)
   val previewSegment: StateFlow<VideoSegment?> = _previewSegment.asStateFlow()
+
+  private val _linkedAccount = MutableStateFlow<LinkedWhatsAppAccount>(loadLinkedAccount())
+  val linkedAccount: StateFlow<LinkedWhatsAppAccount> = _linkedAccount.asStateFlow()
+
+  private val _showLinkDialog = MutableStateFlow<Boolean>(false)
+  val showLinkDialog: StateFlow<Boolean> = _showLinkDialog.asStateFlow()
+
+  init {
+    // Show link dialog on initial startup if user hasn't connected WhatsApp yet
+    if (!_linkedAccount.value.isLinked) {
+      _showLinkDialog.value = true
+    }
+  }
+
+  private fun loadLinkedAccount(): LinkedWhatsAppAccount {
+    val isLinked = prefs.getBoolean("wa_is_linked", false)
+    val raw = prefs.getString("wa_raw_phone", "") ?: ""
+    val norm = prefs.getString("wa_norm_phone", "") ?: ""
+    val time = prefs.getLong("wa_linked_at", 0L)
+    return LinkedWhatsAppAccount(
+      rawPhoneNumber = raw,
+      normalizedPhoneNumber = norm,
+      isLinked = isLinked && norm.isNotBlank(),
+      linkedAtTimestamp = time
+    )
+  }
+
+  fun openLinkDialog() {
+    _showLinkDialog.value = true
+  }
+
+  fun closeLinkDialog() {
+    _showLinkDialog.value = false
+  }
+
+  fun linkWhatsAppNumber(context: Context, rawNumber: String): Boolean {
+    val normalized = normalizePhoneNumber(rawNumber)
+    if (normalized.length < 9) {
+      Toast.makeText(context, "Nomor WhatsApp tidak valid (minimal 9 digit)", Toast.LENGTH_SHORT).show()
+      return false
+    }
+
+    val now = System.currentTimeMillis()
+    prefs.edit()
+      .putBoolean("wa_is_linked", true)
+      .putString("wa_raw_phone", rawNumber.trim())
+      .putString("wa_norm_phone", normalized)
+      .putLong("wa_linked_at", now)
+      .apply()
+
+    _linkedAccount.value = LinkedWhatsAppAccount(
+      rawPhoneNumber = rawNumber.trim(),
+      normalizedPhoneNumber = normalized,
+      isLinked = true,
+      linkedAtTimestamp = now
+    )
+    _showLinkDialog.value = false
+    Toast.makeText(context, "WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
+    return true
+  }
+
+  fun unlinkWhatsAppNumber(context: Context) {
+    prefs.edit()
+      .remove("wa_is_linked")
+      .remove("wa_raw_phone")
+      .remove("wa_norm_phone")
+      .remove("wa_linked_at")
+      .apply()
+
+    _linkedAccount.value = LinkedWhatsAppAccount()
+    Toast.makeText(context, "Tautan WhatsApp Dihapus", Toast.LENGTH_SHORT).show()
+  }
 
   fun onVideoSelected(uri: Uri, context: Context) {
     viewModelScope.launch {
@@ -92,11 +167,23 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun shareSegment(context: Context, segment: VideoSegment) {
-    ExportHelper.shareToWhatsAppStatus(context, segment)
+    val account = _linkedAccount.value
+    if (!account.isLinked || account.normalizedPhoneNumber.isBlank()) {
+      _showLinkDialog.value = true
+      Toast.makeText(context, "Hubungkan nomor WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
+      return
+    }
+    ExportHelper.shareToLinkedWhatsApp(context, segment, account.normalizedPhoneNumber)
   }
 
   fun shareAll(context: Context, segments: List<VideoSegment>) {
-    ExportHelper.shareAllToWhatsApp(context, segments)
+    val account = _linkedAccount.value
+    if (!account.isLinked || account.normalizedPhoneNumber.isBlank()) {
+      _showLinkDialog.value = true
+      Toast.makeText(context, "Hubungkan nomor WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
+      return
+    }
+    ExportHelper.shareAllToLinkedWhatsApp(context, segments, account.normalizedPhoneNumber)
   }
 
   fun setPreviewSegment(segment: VideoSegment?) {

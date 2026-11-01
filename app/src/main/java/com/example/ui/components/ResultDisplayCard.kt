@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.model.LinkedWhatsAppAccount
 import com.example.model.OptimizationResult
 import com.example.model.VideoSegment
 import com.example.ui.theme.ElectricMint
@@ -57,6 +58,8 @@ import com.example.ui.theme.IOSTextSecondary
 @Composable
 fun ResultDisplayCard(
   result: OptimizationResult,
+  linkedAccount: LinkedWhatsAppAccount = LinkedWhatsAppAccount(),
+  onOpenLinkDialog: () -> Unit = {},
   onShareToWhatsApp: (VideoSegment) -> Unit,
   onShareAll: (List<VideoSegment>) -> Unit,
   onSaveToGallery: (VideoSegment) -> Unit,
@@ -272,13 +275,17 @@ fun ResultDisplayCard(
 
       // Tombol Aksi Bersih
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // 1. Kirim ke Status WhatsApp
+        // 1. Kirim ke WhatsApp Pribadi (Perangkat Tertaut)
         Button(
           onClick = {
-            if (result.segments.size == 1) {
-              onShareToWhatsApp(activeSegment)
+            if (!linkedAccount.isLinked) {
+              onOpenLinkDialog()
             } else {
-              onShareAll(result.segments)
+              if (result.segments.size == 1) {
+                onShareToWhatsApp(activeSegment)
+              } else {
+                onShareAll(result.segments)
+              }
             }
           },
           modifier = Modifier
@@ -315,14 +322,43 @@ fun ResultDisplayCard(
               )
               Spacer(modifier = Modifier.width(8.dp))
               Text(
-                text = if (result.segments.size == 1) {
-                  "Kirim ke Status WhatsApp"
+                text = if (!linkedAccount.isLinked) {
+                  "Hubungkan WhatsApp & Kirim"
+                } else if (result.segments.size == 1) {
+                  "Kirim ke WhatsApp Saya"
                 } else {
-                  "Kirim ke Status WhatsApp (${result.segments.size} Bagian)"
+                  "Kirim ke WhatsApp Saya (${result.segments.size} Bagian)"
                 },
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
                 color = Color(0xFF022115)
+              )
+            }
+          }
+        }
+
+        // Trik Bebas Kompresi Box
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.05f))
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+          Row(verticalAlignment = Alignment.Top) {
+            Text(text = "💡", fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+              Text(
+                text = if (linkedAccount.isLinked) {
+                  "Otomatis dikirim ke ${linkedAccount.formattedDisplayNumber}. Buka chat nomor Anda di WhatsApp, lalu tekan Teruskan (Forward) ke Status untuk kualitas 100% HD tanpa kompresi."
+                } else {
+                  "Tautkan nomor WhatsApp Anda agar video dikirim ke chat pribadi Anda lalu diteruskan ke Status tanpa kompresi."
+                },
+                fontSize = 11.sp,
+                color = IOSTextSecondary,
+                lineHeight = 16.sp
               )
             }
           }

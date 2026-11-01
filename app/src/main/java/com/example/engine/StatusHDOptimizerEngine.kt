@@ -38,9 +38,8 @@ class StatusHDOptimizerEngine(private val context: Context) {
       val durationSec = (durationMs / 1000.0).coerceAtLeast(1.0)
       val originalBitrateKbps = ((sizeBytes * 8.0) / durationSec) / 1000.0
 
-      // WhatsApp Status hard ceiling is ~2800 kbps. Above this, WhatsApp transcodes aggressively.
       val maxrate = when {
-        originalBitrateKbps > 2800.0 -> 2800
+        originalBitrateKbps > 6000.0 -> 6000
         originalBitrateKbps < 500.0 -> 500
         else -> originalBitrateKbps.toInt()
       }
@@ -58,98 +57,63 @@ class StatusHDOptimizerEngine(private val context: Context) {
       durationSec: Int = MAX_CHUNK_DURATION_SEC,
       hasAudio: Boolean = true
     ): Array<String> {
-    val args = mutableListOf<String>()
-    args.add("-y")
+      val args = mutableListOf<String>()
+      args.add("-y")
 
-    if (isSegment) {
-      args.add("-ss")
-      args.add(startSec.toString())
+      if (isSegment) {
+        args.add("-ss")
+        args.add(startSec.toString())
+      }
+
+      args.add("-i")
+      args.add(inputFile)
+
+      if (isSegment) {
+        args.add("-t")
+        args.add(durationSec.toString())
+      }
+
+      args.add("-c:v")
+      args.add("libx264")
+      args.add("-preset")
+      args.add("faster")
+      args.add("-tune")
+      args.add("film")
+      args.add("-x264-params")
+      args.add("aq-mode=3")
+      args.add("-crf")
+      args.add("20")
+      args.add("-g")
+      args.add("48")
+
+      args.add("-maxrate")
+      args.add("${maxrate}k")
+      args.add("-bufsize")
+      args.add("${bufsize}k")
+
+      args.add("-vf")
+      args.add(SCALE_FILTER)
+
+      args.add("-pix_fmt")
+      args.add("yuv420p")
+
+      if (hasAudio) {
+        args.add("-c:a")
+        args.add("aac")
+        args.add("-b:a")
+        args.add("128k")
+      } else {
+        args.add("-an")
+      }
+
+      args.add("-movflags")
+      args.add("+faststart")
+
+      args.add(outputFile)
+
+      return args.toTypedArray()
     }
-
-    args.add("-i")
-    args.add(inputFile)
-
-    if (isSegment) {
-      args.add("-t")
-      args.add(durationSec.toString())
-    }
-
-    // Video stream mapping & smart filter
-    args.add("-map")
-    args.add("0:v:0")
-
-    args.add("-vf")
-    args.add(SCALE_FILTER)
-
-    // Codec, Tuning & High Density Streaming Profile (Bypass WhatsApp recompression)
-    args.add("-c:v")
-    args.add("libx264")
-    args.add("-preset")
-    args.add("medium")
-    args.add("-profile:v")
-    args.add("high")
-    args.add("-level")
-    args.add("4.1")
-    args.add("-tune")
-    args.add("film")
-    args.add("-x264-params")
-    args.add("aq-mode=3")
-    args.add("-crf")
-    args.add("20")
-
-    // High Keyframe Density ("padat & matang") to ensure instant seek points & no WA transcode
-    args.add("-g")
-    args.add("30")
-    args.add("-keyint_min")
-    args.add("30")
-    args.add("-sc_threshold")
-    args.add("0")
-
-    // Bitrate anti-bloat capped to WhatsApp bypass limit
-    args.add("-maxrate")
-    args.add("${maxrate}k")
-    args.add("-bufsize")
-    args.add("${bufsize}k")
-
-    // Color matrix standards (prevent WA color degradation)
-    args.add("-pix_fmt")
-    args.add("yuv420p")
-    args.add("-colorspace")
-    args.add("bt709")
-    args.add("-color_primaries")
-    args.add("bt709")
-    args.add("-color_trc")
-    args.add("bt709")
-
-    // Audio parameters (AAC 128k stereo)
-    if (hasAudio) {
-      args.add("-map")
-      args.add("0:a:0?")
-      args.add("-c:a")
-      args.add("aac")
-      args.add("-b:a")
-      args.add("128k")
-      args.add("-ar")
-      args.add("44100")
-      args.add("-ac")
-      args.add("2")
-    } else {
-      args.add("-an")
-    }
-
-    // Suppress incompatible subtitle streams
-    args.add("-sn")
-
-    // Atom FastStart for instant playback
-    args.add("-movflags")
-    args.add("+faststart")
-
-    // Output path
-    args.add(outputFile)
-
-    return args.toTypedArray()
   }
-}
 
   suspend fun optimizeVideo(sourceVideo: VideoMetadata): OptimizationResult? =
     withContext(Dispatchers.IO) {

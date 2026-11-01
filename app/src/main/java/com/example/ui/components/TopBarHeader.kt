@@ -28,8 +28,18 @@ import com.example.ui.theme.ElectricMint
 import com.example.ui.theme.IOSTextPrimary
 import com.example.ui.theme.IOSTextSecondary
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.ui.platform.testTag
+import com.example.model.LinkedWhatsAppAccount
+
 @Composable
 fun TopBarHeader(
+  linkedAccount: LinkedWhatsAppAccount = LinkedWhatsAppAccount(),
+  onOpenLinkDialog: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   Row(
@@ -65,22 +75,68 @@ fun TopBarHeader(
       )
     }
 
-    Spacer(modifier = Modifier.width(14.dp))
+    Spacer(modifier = Modifier.width(12.dp))
 
-    Column {
+    Column(modifier = Modifier.weight(1f)) {
       Text(
         text = "StatusHD",
-        fontSize = 22.sp,
+        fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         color = IOSTextPrimary,
         letterSpacing = (-0.5).sp
       )
       Text(
-        text = "Kualitas jernih untuk Status WhatsApp",
-        fontSize = 13.sp,
+        text = "Kualitas jernih untuk Status WA",
+        fontSize = 12.sp,
         color = IOSTextSecondary,
         fontWeight = FontWeight.Normal
       )
+    }
+
+    // Perangkat Tertaut / Hubungkan WA Pill
+    Box(
+      modifier = Modifier
+        .clip(RoundedCornerShape(20.dp))
+        .background(
+          if (linkedAccount.isLinked) Color(0xFF10E599).copy(alpha = 0.12f)
+          else Color(0xFFFF9F0A).copy(alpha = 0.12f)
+        )
+        .border(
+          BorderStroke(
+            1.dp,
+            if (linkedAccount.isLinked) Color(0xFF10E599).copy(alpha = 0.35f)
+            else Color(0xFFFF9F0A).copy(alpha = 0.35f)
+          ),
+          RoundedCornerShape(20.dp)
+        )
+        .clickable(onClick = onOpenLinkDialog)
+        .padding(horizontal = 10.dp, vertical = 6.dp)
+        .testTag("top_bar_link_status_pill"),
+      contentAlignment = Alignment.Center
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+          modifier = Modifier
+            .size(7.dp)
+            .clip(CircleShape)
+            .background(
+              if (linkedAccount.isLinked) ElectricMint
+              else Color(0xFFFF9F0A)
+            )
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+          text = if (linkedAccount.isLinked) {
+            val shortPhone = linkedAccount.normalizedPhoneNumber.takeLast(4)
+            "WA: ••$shortPhone"
+          } else {
+            "Tautkan WA"
+          },
+          fontSize = 11.sp,
+          fontWeight = FontWeight.SemiBold,
+          color = if (linkedAccount.isLinked) ElectricMint else Color(0xFFFF9F0A)
+        )
+      }
     }
   }
 }

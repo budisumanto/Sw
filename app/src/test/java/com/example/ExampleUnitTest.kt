@@ -14,15 +14,15 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `anti-bloat bitrate formula clamps high bitrates to 2800k`() {
+  fun `anti-bloat bitrate formula clamps high bitrates to 6000k`() {
     // 50 MB in 10 seconds -> ~40,000 kbps
     val sizeBytes = 50L * 1024 * 1024
     val durationMs = 10_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(2800, maxrate)
-    assertEquals(5600, bufsize)
+    assertEquals(6000, maxrate)
+    assertEquals(12000, bufsize)
   }
 
   @Test
@@ -65,37 +65,29 @@ class ExampleUnitTest {
     // Must start with -y (never "ffmpeg")
     assertEquals("-y", args[0])
 
-    // Scale filter
-    assertTrue(argsList.contains("-vf"))
-    val vfIndex = argsList.indexOf("-vf")
-    assertEquals(StatusHDOptimizerEngine.SCALE_FILTER, argsList[vfIndex + 1])
-
-    // Codec, Profile & Tuning
+    // Codec & Tuning
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
-    assertEquals("medium", argsList[argsList.indexOf("-preset") + 1])
-    assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
-    assertEquals("4.1", argsList[argsList.indexOf("-level") + 1])
+    assertEquals("faster", argsList[argsList.indexOf("-preset") + 1])
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
-
-    // High Keyframe Density
-    assertEquals("30", argsList[argsList.indexOf("-g") + 1])
-    assertEquals("30", argsList[argsList.indexOf("-keyint_min") + 1])
-    assertEquals("0", argsList[argsList.indexOf("-sc_threshold") + 1])
+    assertEquals("48", argsList[argsList.indexOf("-g") + 1])
 
     // Bitrate
     assertEquals("2500k", argsList[argsList.indexOf("-maxrate") + 1])
     assertEquals("5000k", argsList[argsList.indexOf("-bufsize") + 1])
 
+    // Scale filter
+    assertTrue(argsList.contains("-vf"))
+    val vfIndex = argsList.indexOf("-vf")
+    assertEquals(StatusHDOptimizerEngine.SCALE_FILTER, argsList[vfIndex + 1])
+
     // Color matrix
     assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
-    assertEquals("bt709", argsList[argsList.indexOf("-colorspace") + 1])
 
     // Audio & Flags
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])
     assertEquals("128k", argsList[argsList.indexOf("-b:a") + 1])
-    assertTrue(argsList.contains("-sn"))
     assertEquals("+faststart", argsList[argsList.indexOf("-movflags") + 1])
   }
 
@@ -171,4 +163,28 @@ class ExampleUnitTest {
     assertEquals("20.0 MB", result.formattedOriginalSize)
     assertEquals("8.0 MB", result.formattedOptimizedSize)
   }
+
+  @Test
+  fun `normalizePhoneNumber handles various Indonesian formats accurately`() {
+    assertEquals("628123456789", com.example.model.normalizePhoneNumber("08123456789"))
+    assertEquals("628123456789", com.example.model.normalizePhoneNumber("+628123456789"))
+    assertEquals("628123456789", com.example.model.normalizePhoneNumber("628123456789"))
+    assertEquals("628123456789", com.example.model.normalizePhoneNumber("8123456789"))
+    assertEquals("6281234567890", com.example.model.normalizePhoneNumber("0812-3456-7890"))
+    assertEquals("6281234567890", com.example.model.normalizePhoneNumber("+62 812 3456 7890"))
+  }
+
+  @Test
+  fun `LinkedWhatsAppAccount formats display number appropriately`() {
+    val unlinked = com.example.model.LinkedWhatsAppAccount()
+    assertEquals("Belum Terhubung", unlinked.formattedDisplayNumber)
+
+    val linked = com.example.model.LinkedWhatsAppAccount(
+      rawPhoneNumber = "08123456789",
+      normalizedPhoneNumber = "628123456789",
+      isLinked = true
+    )
+    assertEquals("+62 812-3456-789", linked.formattedDisplayNumber)
+  }
 }
+

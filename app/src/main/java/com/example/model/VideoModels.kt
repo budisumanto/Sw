@@ -110,3 +110,39 @@ fun formatFileSize(bytes: Long): String {
     else -> "$bytes B"
   }
 }
+
+data class LinkedWhatsAppAccount(
+  val rawPhoneNumber: String = "",
+  val normalizedPhoneNumber: String = "",
+  val isLinked: Boolean = false,
+  val linkedAtTimestamp: Long = 0L
+) {
+  val formattedDisplayNumber: String
+    get() {
+      if (!isLinked || normalizedPhoneNumber.isBlank()) return "Belum Terhubung"
+      val clean = normalizedPhoneNumber
+      return if (clean.startsWith("62") && clean.length >= 10) {
+        val rest = clean.substring(2)
+        val part1 = rest.take(3)
+        val part2 = rest.drop(3).take(4)
+        val part3 = rest.drop(7)
+        "+62 $part1-$part2-$part3"
+      } else {
+        "+$clean"
+      }
+    }
+}
+
+fun normalizePhoneNumber(input: String): String {
+  val trimmed = input.trim()
+  var digits = trimmed.replace(Regex("[^0-9]"), "")
+  if (digits.startsWith("0")) {
+    digits = "62" + digits.substring(1)
+  } else if (digits.startsWith("8")) {
+    digits = "62$digits"
+  } else if (!digits.startsWith("62") && digits.length in 8..15) {
+    digits = "62$digits"
+  }
+  return digits
+}
+
