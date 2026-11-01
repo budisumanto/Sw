@@ -84,7 +84,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
     args.add("-c:v")
     args.add("libx264")
     args.add("-preset")
-    args.add("faster")
+    args.add("medium")
     args.add("-tune")
     args.add("film")
     args.add("-x264-params")

@@ -72,7 +72,7 @@ class ExampleUnitTest {
 
     // Codec & Tuning
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
-    assertEquals("faster", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("medium", argsList[argsList.indexOf("-preset") + 1])
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])

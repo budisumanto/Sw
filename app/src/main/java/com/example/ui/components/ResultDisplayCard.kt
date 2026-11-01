@@ -1,7 +1,8 @@
 package com.example.ui.components
 
+import android.widget.MediaController
+import android.widget.VideoView
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,33 +17,34 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.model.OptimizationResult
 import com.example.model.VideoSegment
 import com.example.ui.theme.ElectricMint
@@ -61,6 +63,9 @@ fun ResultDisplayCard(
   onReset: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  var selectedPartIndex by remember { mutableIntStateOf(0) }
+  val activeSegment = result.segments.getOrNull(selectedPartIndex) ?: result.segments.first()
+
   IOSLiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
@@ -70,16 +75,16 @@ fun ResultDisplayCard(
   ) {
     Column(
       modifier = Modifier.fillMaxWidth(),
-      verticalArrangement = Arrangement.spacedBy(18.dp)
+      verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // Header: Ikon centang berpendar hijau segar + Judul
+      // Header: Ikon centang hijau + Judul
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
         Box(
           modifier = Modifier
-            .size(46.dp)
+            .size(44.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
@@ -92,7 +97,7 @@ fun ResultDisplayCard(
             imageVector = Icons.Default.Check,
             contentDescription = null,
             tint = Color(0xFF022115),
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier.size(24.dp)
           )
         }
 
@@ -114,99 +119,129 @@ fun ResultDisplayCard(
         }
       }
 
-      // Kartu perbandingan simpel: 48 MB ➔ 14 MB (Hemat 70% • Kualitas HD)
+      // Inline Video Player Container dengan Badge "✨ HD Ready"
       Box(
         modifier = Modifier
           .fillMaxWidth()
-          .clip(RoundedCornerShape(18.dp))
-          .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-          .border(BorderStroke(1.dp, IOSGlassHighlightTop), RoundedCornerShape(18.dp))
-          .padding(16.dp)
+          .clip(RoundedCornerShape(20.dp))
+          .background(Color.Black.copy(alpha = 0.65f))
+          .border(BorderStroke(1.dp, IOSGlassHighlightTop), RoundedCornerShape(20.dp))
       ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Column {
-              Text(text = "Ukuran Asli", fontSize = 11.sp, color = IOSTextSecondary)
-              Text(
-                text = result.formattedOriginalSize,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = IOSTextPrimary
-              )
+        // Video Player View
+        AndroidView(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(260.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .testTag("inline_video_player"),
+          factory = { ctx ->
+            VideoView(ctx).apply {
+              val mediaController = MediaController(ctx)
+              mediaController.setAnchorView(this)
+              setMediaController(mediaController)
+              setVideoPath(activeSegment.file.absolutePath)
+              setOnPreparedListener { mp ->
+                mp.isLooping = true
+                start()
+              }
             }
+          },
+          update = { videoView ->
+            videoView.setVideoPath(activeSegment.file.absolutePath)
+            videoView.start()
+          }
+        )
 
-            Text(
-              text = "➔",
-              fontSize = 18.sp,
-              color = ElectricMint,
-              fontWeight = FontWeight.Bold
+        // Floating Badge: "✨ HD Ready"
+        Box(
+          modifier = Modifier
+            .align(Alignment.TopStart)
+            .padding(12.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF000000).copy(alpha = 0.72f))
+            .border(
+              BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.25f)),
+              RoundedCornerShape(12.dp)
             )
-
-            Column(horizontalAlignment = Alignment.End) {
-              Text(text = "Ukuran Optimal", fontSize = 11.sp, color = IOSTextSecondary)
-              Text(
-                text = result.formattedOptimizedSize,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = ElectricMint
-              )
-            }
-          }
-
-          val savingsText = if (result.savedPercentage > 0) {
-            "Hemat ${result.savedPercentage}% • Kualitas HD"
-          } else {
-            "Kualitas Jernih Maksimal • Format HD"
-          }
-
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+        ) {
           Text(
-            text = savingsText,
+            text = "✨ HD Ready",
             fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
             color = ElectricMint,
-            fontWeight = FontWeight.SemiBold
+            letterSpacing = 0.2.sp
           )
         }
       }
 
-      // Daftar Bagian Video (Jika lebih dari 90 detik)
+      // Part Selector Pills (jika ada lebih dari 1 bagian / split > 90s)
       if (result.segments.size > 1) {
-        Text(
-          text = "Bagian Video (${result.segments.size} Klip):",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.SemiBold,
-          color = IOSTextPrimary
-        )
-
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          result.segments.forEach { segment ->
-            IOSLiquidSegmentRow(
-              segment = segment,
-              onShare = { onShareToWhatsApp(segment) },
-              onSave = { onSaveToGallery(segment) },
-              onPreview = { onPreviewSegment(segment) }
-            )
+          Text(
+            text = "Pilih Bagian Video (${result.segments.size} Bagian):",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = IOSTextPrimary
+          )
+
+          LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            itemsIndexed(result.segments) { index, seg ->
+              val isSelected = index == selectedPartIndex
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(14.dp))
+                  .background(
+                    if (isSelected) {
+                      Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark))
+                    } else {
+                      Brush.horizontalGradient(
+                        listOf(
+                          Color(0xFFFFFFFF).copy(alpha = 0.08f),
+                          Color(0xFFFFFFFF).copy(alpha = 0.05f)
+                        )
+                      )
+                    }
+                  )
+                  .border(
+                    BorderStroke(
+                      1.dp,
+                      if (isSelected) ElectricMint else IOSGlassHighlightTop
+                    ),
+                    RoundedCornerShape(14.dp)
+                  )
+                  .clickable { selectedPartIndex = index }
+                  .padding(horizontal = 14.dp, vertical = 8.dp)
+              ) {
+                Text(
+                  text = "Bagian ${seg.partIndex} (${seg.formattedDuration})",
+                  fontSize = 12.sp,
+                  fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                  color = if (isSelected) Color(0xFF021E14) else IOSTextPrimary
+                )
+              }
+            }
           }
         }
       }
 
-      // Dua Tombol Aksi Bersih
+      // Action Buttons
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // 1. Bagikan ke WhatsApp Status (Tombol utama paling terang)
+        // 1. Kirim ke Status WhatsApp (Tombol utama paling terang)
         Button(
           onClick = {
             if (result.segments.size == 1) {
-              onShareToWhatsApp(result.segments.first())
+              onShareToWhatsApp(activeSegment)
             } else {
               onShareAll(result.segments)
             }
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(54.dp)
             .testTag("share_whatsapp_status_button"),
           shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
@@ -234,13 +269,17 @@ fun ResultDisplayCard(
                 imageVector = Icons.Default.Share,
                 contentDescription = null,
                 tint = Color(0xFF022115),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(19.dp)
               )
               Spacer(modifier = Modifier.width(8.dp))
               Text(
-                text = if (result.segments.size == 1) "Bagikan ke WhatsApp Status" else "Bagikan Semua (${result.segments.size} Bagian)",
+                text = if (result.segments.size == 1) {
+                  "Kirim ke Status WhatsApp"
+                } else {
+                  "Kirim ke Status WhatsApp (${result.segments.size} Bagian)"
+                },
                 fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
+                fontSize = 15.sp,
                 color = Color(0xFF022115)
               )
             }
@@ -251,11 +290,17 @@ fun ResultDisplayCard(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(50.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
             .border(BorderStroke(1.dp, IOSGlassHighlightTop), RoundedCornerShape(20.dp))
-            .clickable { onSaveAllToGallery(result.segments) }
+            .clickable {
+              if (result.segments.size == 1) {
+                onSaveToGallery(activeSegment)
+              } else {
+                onSaveAllToGallery(result.segments)
+              }
+            }
             .testTag("save_to_gallery_button"),
           contentAlignment = Alignment.Center
         ) {
@@ -279,121 +324,20 @@ fun ResultDisplayCard(
           }
         }
 
-        // 3. Tombol tautan bawah: "Pilih video lain"
+        // 3. Tombol tautan bawah: "Proses video lainnya"
         Box(
           modifier = Modifier.fillMaxWidth(),
           contentAlignment = Alignment.Center
         ) {
           TextButton(onClick = onReset) {
             Text(
-              text = "Pilih video lain",
+              text = "Proses video lainnya",
               color = IOSTextSecondary,
               fontSize = 13.sp,
               fontWeight = FontWeight.Medium
             )
           }
         }
-      }
-    }
-  }
-}
-
-@Composable
-fun IOSLiquidSegmentRow(
-  segment: VideoSegment,
-  onShare: () -> Unit,
-  onSave: () -> Unit,
-  onPreview: () -> Unit
-) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .clip(RoundedCornerShape(16.dp))
-      .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-      .border(BorderStroke(1.dp, IOSGlassHighlightTop), RoundedCornerShape(16.dp))
-      .padding(10.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    // Thumbnail preview
-    Box(
-      modifier = Modifier
-        .size(width = 54.dp, height = 54.dp)
-        .clip(RoundedCornerShape(12.dp))
-        .background(Color.Black.copy(alpha = 0.5f))
-        .clickable(onClick = onPreview),
-      contentAlignment = Alignment.Center
-    ) {
-      if (segment.thumbnailBitmap != null) {
-        Image(
-          bitmap = segment.thumbnailBitmap.asImageBitmap(),
-          contentDescription = "Pratinjau Bagian",
-          modifier = Modifier.fillMaxSize(),
-          contentScale = ContentScale.Crop
-        )
-      } else {
-        Icon(
-          imageVector = Icons.Default.Movie,
-          contentDescription = null,
-          tint = ElectricMint,
-          modifier = Modifier.size(24.dp)
-        )
-      }
-
-      Box(
-        modifier = Modifier
-          .size(22.dp)
-          .clip(CircleShape)
-          .background(Color.Black.copy(alpha = 0.65f)),
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          imageVector = Icons.Default.PlayArrow,
-          contentDescription = "Putar",
-          tint = Color.White,
-          modifier = Modifier.size(14.dp)
-        )
-      }
-    }
-
-    Spacer(modifier = Modifier.width(12.dp))
-
-    Column(modifier = Modifier.weight(1f)) {
-      Text(
-        text = "Bagian ${segment.partIndex} dari ${segment.totalParts}",
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        color = IOSTextPrimary
-      )
-      Text(
-        text = "${segment.formattedDuration} • ${segment.formattedSize}",
-        fontSize = 11.sp,
-        color = IOSTextSecondary
-      )
-    }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-      IconButton(
-        onClick = onSave,
-        modifier = Modifier.size(36.dp)
-      ) {
-        Icon(
-          imageVector = Icons.Default.Save,
-          contentDescription = "Simpan",
-          tint = IOSTextSecondary,
-          modifier = Modifier.size(18.dp)
-        )
-      }
-
-      IconButton(
-        onClick = onShare,
-        modifier = Modifier.size(36.dp)
-      ) {
-        Icon(
-          imageVector = Icons.Default.Share,
-          contentDescription = "Bagikan",
-          tint = ElectricMint,
-          modifier = Modifier.size(18.dp)
-        )
       }
     }
   }
