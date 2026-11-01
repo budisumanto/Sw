@@ -194,15 +194,15 @@ fun VideoSelectorCard(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          // Thumbnail video melengkung lembut (16.dp)
+          // Thumbnail video melengkung lembut
           Box(
             modifier = Modifier
-              .size(width = 86.dp, height = 98.dp)
-              .clip(RoundedCornerShape(16.dp))
+              .size(width = 78.dp, height = 78.dp)
+              .clip(RoundedCornerShape(18.dp))
               .background(Color.Black.copy(alpha = 0.5f))
               .border(
                 BorderStroke(1.dp, IOSGlassHighlightTop),
-                RoundedCornerShape(16.dp)
+                RoundedCornerShape(18.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
@@ -218,7 +218,7 @@ fun VideoSelectorCard(
                 imageVector = Icons.Default.Movie,
                 contentDescription = null,
                 tint = ElectricMint,
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(32.dp)
               )
             }
 
@@ -226,27 +226,30 @@ fun VideoSelectorCard(
             Box(
               modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(6.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black.copy(alpha = 0.78f))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .padding(4.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color.Black.copy(alpha = 0.8f))
+                .padding(horizontal = 5.dp, vertical = 2.dp)
             ) {
               Text(
                 text = selectedVideo.formattedDuration,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
               )
             }
           }
 
-          Spacer(modifier = Modifier.width(16.dp))
+          Spacer(modifier = Modifier.width(14.dp))
 
           // Video Information
-          Column(modifier = Modifier.weight(1f)) {
+          Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+          ) {
             Text(
               text = selectedVideo.fileName,
-              fontSize = 16.sp,
+              fontSize = 15.sp,
               fontWeight = FontWeight.Bold,
               color = IOSTextPrimary,
               maxLines = 1,
@@ -256,7 +259,7 @@ fun VideoSelectorCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-              text = "${selectedVideo.fileName.substringBeforeLast(".")} • ${selectedVideo.formattedSize}",
+              text = "${selectedVideo.formattedDuration} • ${selectedVideo.formattedSize}",
               fontSize = 13.sp,
               color = ElectricMint,
               fontWeight = FontWeight.SemiBold
@@ -264,12 +267,23 @@ fun VideoSelectorCard(
 
             if (selectedVideo.needsSplitting) {
               Spacer(modifier = Modifier.height(6.dp))
-              Text(
-                text = "Video panjang otomatis dibagi menjadi beberapa bagian rapi.",
-                fontSize = 12.sp,
-                color = Color(0xFFFDE68A),
-                lineHeight = 16.sp
-              )
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(Color(0xFFFEF3C7).copy(alpha = 0.12f))
+                  .border(
+                    BorderStroke(1.dp, Color(0xFFFDE68A).copy(alpha = 0.35f)),
+                    RoundedCornerShape(8.dp)
+                  )
+                  .padding(horizontal = 8.dp, vertical = 3.dp)
+              ) {
+                Text(
+                  text = "Dibagi ${selectedVideo.estimatedChunkCount} bagian otomatis (per 90s)",
+                  fontSize = 11.sp,
+                  color = Color(0xFFFDE68A),
+                  fontWeight = FontWeight.Medium
+                )
+              }
             }
           }
         }

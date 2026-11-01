@@ -53,6 +53,12 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun resetOptimization() {
+    resetAll()
+  }
+
+  fun resetAll() {
+    _selectedVideo.value = null
+    _previewSegment.value = null
     engine.resetToIdle()
   }
 
@@ -61,6 +67,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       val success = ExportHelper.saveToGallery(context, segment.file)
       if (success) {
         Toast.makeText(context, "Disimpan ke Galeri (Movies/StatusHD)", Toast.LENGTH_SHORT).show()
+        resetAll()
       } else {
         Toast.makeText(context, "Gagal menyimpan ke galeri", Toast.LENGTH_SHORT).show()
       }
@@ -75,7 +82,12 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
           savedCount++
         }
       }
-      Toast.makeText(context, "Berhasil menyimpan $savedCount bagian ke Galeri", Toast.LENGTH_SHORT).show()
+      if (savedCount > 0) {
+        Toast.makeText(context, "Berhasil menyimpan $savedCount bagian ke Galeri", Toast.LENGTH_SHORT).show()
+        resetAll()
+      } else {
+        Toast.makeText(context, "Gagal menyimpan ke galeri", Toast.LENGTH_SHORT).show()
+      }
     }
   }
 

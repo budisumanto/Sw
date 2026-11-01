@@ -14,15 +14,15 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `anti-bloat bitrate formula clamps high bitrates to 6000k`() {
+  fun `anti-bloat bitrate formula clamps high bitrates to 2800k`() {
     // 50 MB in 10 seconds -> ~40,000 kbps
     val sizeBytes = 50L * 1024 * 1024
     val durationMs = 10_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(6000, maxrate)
-    assertEquals(12000, bufsize)
+    assertEquals(2800, maxrate)
+    assertEquals(5600, bufsize)
   }
 
   @Test
@@ -50,7 +50,7 @@ class ExampleUnitTest {
   }
 
   @Test
-  fun `execution args strictly match authentic iOS Liquid Glass engine specifications with NO GOP`() {
+  fun `execution args strictly match WhatsApp HD engine specifications with dense keyframe structure`() {
     val args = StatusHDOptimizerEngine.buildExecutionArgs(
       inputFile = "/storage/input.mp4",
       outputFile = "/storage/output.mp4",
@@ -70,18 +70,27 @@ class ExampleUnitTest {
     val vfIndex = argsList.indexOf("-vf")
     assertEquals(StatusHDOptimizerEngine.SCALE_FILTER, argsList[vfIndex + 1])
 
-    // Codec & Tuning
+    // Codec, Profile & Tuning
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
     assertEquals("medium", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
+    assertEquals("4.1", argsList[argsList.indexOf("-level") + 1])
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
+
+    // High Keyframe Density
+    assertEquals("30", argsList[argsList.indexOf("-g") + 1])
+    assertEquals("30", argsList[argsList.indexOf("-keyint_min") + 1])
+    assertEquals("0", argsList[argsList.indexOf("-sc_threshold") + 1])
+
+    // Bitrate
     assertEquals("2500k", argsList[argsList.indexOf("-maxrate") + 1])
     assertEquals("5000k", argsList[argsList.indexOf("-bufsize") + 1])
-    assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
 
-    // CRITICAL: GOP (-g) MUST BE COMPLETELY ABSENT
-    assertFalse("-g parameter must be completely removed from FFmpeg arguments", argsList.contains("-g"))
+    // Color matrix
+    assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
+    assertEquals("bt709", argsList[argsList.indexOf("-colorspace") + 1])
 
     // Audio & Flags
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])
@@ -103,7 +112,7 @@ class ExampleUnitTest {
     val argsList = args.toList()
     assertTrue(argsList.contains("-an"))
     assertFalse(argsList.contains("-c:a"))
-    assertFalse(argsList.contains("-g"))
+    assertTrue(argsList.contains("-g"))
   }
 
   @Test

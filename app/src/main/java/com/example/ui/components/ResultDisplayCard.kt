@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,8 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,25 +68,36 @@ fun ResultDisplayCard(
   var selectedPartIndex by remember { mutableIntStateOf(0) }
   val activeSegment = result.segments.getOrNull(selectedPartIndex) ?: result.segments.first()
 
+  // Track video playback state cleanly without external popup MediaController
+  var isPlaying by remember { mutableStateOf(true) }
+  var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
+
+  // Release player when composable leaves composition
+  DisposableEffect(activeSegment.file.absolutePath) {
+    onDispose {
+      videoViewRef?.stopPlayback()
+    }
+  }
+
   IOSLiquidGlassCard(
     modifier = modifier
       .fillMaxWidth()
       .testTag("result_display_card"),
     cornerRadius = 28.dp,
-    padding = 22.dp
+    padding = 20.dp
   ) {
     Column(
       modifier = Modifier.fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // Header: Ikon centang hijau + Judul
+      // Header: Centang hijau cerah + Judul
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
         Box(
           modifier = Modifier
-            .size(44.dp)
+            .size(42.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
@@ -97,11 +110,11 @@ fun ResultDisplayCard(
             imageVector = Icons.Default.Check,
             contentDescription = null,
             tint = Color(0xFF022115),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(22.dp)
           )
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Column {
           Text(
@@ -112,53 +125,88 @@ fun ResultDisplayCard(
             letterSpacing = (-0.3).sp
           )
           Text(
-            text = "Kualitas dioptimalkan tanpa kompresi buram",
+            text = "Format & kepadatan dioptimalkan untuk WhatsApp HD",
             fontSize = 12.sp,
             color = ElectricMint
           )
         }
       }
 
-      // Inline Video Player Container dengan Badge "✨ HD Ready"
+      // Inline Video Player Container (Rapi, Terkendali, Tidak Nabrak Desain)
       Box(
         modifier = Modifier
           .fillMaxWidth()
+          .height(240.dp)
           .clip(RoundedCornerShape(20.dp))
-          .background(Color.Black.copy(alpha = 0.65f))
+          .background(Color.Black)
           .border(BorderStroke(1.dp, IOSGlassHighlightTop), RoundedCornerShape(20.dp))
+          .clickable {
+            videoViewRef?.let { vv ->
+              if (vv.isPlaying) {
+                vv.pause()
+                isPlaying = false
+              } else {
+                vv.start()
+                isPlaying = true
+              }
+            }
+          },
+        contentAlignment = Alignment.Center
       ) {
-        // Video Player View
+        // Player Surface
         AndroidView(
           modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
+            .fillMaxSize()
             .clip(RoundedCornerShape(20.dp))
             .testTag("inline_video_player"),
           factory = { ctx ->
             VideoView(ctx).apply {
-              val mediaController = MediaController(ctx)
-              mediaController.setAnchorView(this)
-              setMediaController(mediaController)
               setVideoPath(activeSegment.file.absolutePath)
               setOnPreparedListener { mp ->
                 mp.isLooping = true
                 start()
+                isPlaying = true
               }
+              setOnCompletionListener {
+                isPlaying = false
+              }
+              videoViewRef = this
             }
           },
-          update = { videoView ->
-            videoView.setVideoPath(activeSegment.file.absolutePath)
-            videoView.start()
+          update = { vv ->
+            videoViewRef = vv
+            vv.setVideoPath(activeSegment.file.absolutePath)
+            vv.start()
+            isPlaying = true
           }
         )
 
-        // Floating Badge: "✨ HD Ready"
+        // Overlay Icon Play ketika video di-pause
+        if (!isPlaying) {
+          Box(
+            modifier = Modifier
+              .size(54.dp)
+              .clip(CircleShape)
+              .background(Color.Black.copy(alpha = 0.65f))
+              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)), CircleShape),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.PlayArrow,
+              contentDescription = "Putar Video",
+              tint = Color.White,
+              modifier = Modifier.size(30.dp)
+            )
+          }
+        }
+
+        // Badge Elegan: "✨ HD Ready"
         Box(
           modifier = Modifier
             .align(Alignment.TopStart)
-            .padding(12.dp)
+            .padding(10.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF000000).copy(alpha = 0.72f))
+            .background(Color(0xFF000000).copy(alpha = 0.75f))
             .border(
               BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.25f)),
               RoundedCornerShape(12.dp)
@@ -167,7 +215,7 @@ fun ResultDisplayCard(
         ) {
           Text(
             text = "✨ HD Ready",
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = ElectricMint,
             letterSpacing = 0.2.sp
@@ -175,7 +223,7 @@ fun ResultDisplayCard(
         }
       }
 
-      // Part Selector Pills (jika ada lebih dari 1 bagian / split > 90s)
+      // Part Selector Pills (jika ada lebih dari 1 bagian)
       if (result.segments.size > 1) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           Text(
@@ -191,21 +239,15 @@ fun ResultDisplayCard(
           ) {
             itemsIndexed(result.segments) { index, seg ->
               val isSelected = index == selectedPartIndex
+              val bgModifier = if (isSelected) {
+                Modifier.background(Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark)))
+              } else {
+                Modifier.background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
+              }
               Box(
                 modifier = Modifier
                   .clip(RoundedCornerShape(14.dp))
-                  .background(
-                    if (isSelected) {
-                      Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark))
-                    } else {
-                      Brush.horizontalGradient(
-                        listOf(
-                          Color(0xFFFFFFFF).copy(alpha = 0.08f),
-                          Color(0xFFFFFFFF).copy(alpha = 0.05f)
-                        )
-                      )
-                    }
-                  )
+                  .then(bgModifier)
                   .border(
                     BorderStroke(
                       1.dp,
@@ -228,9 +270,9 @@ fun ResultDisplayCard(
         }
       }
 
-      // Action Buttons
+      // Tombol Aksi Bersih
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // 1. Kirim ke Status WhatsApp (Tombol utama paling terang)
+        // 1. Kirim ke Status WhatsApp
         Button(
           onClick = {
             if (result.segments.size == 1) {
@@ -286,7 +328,7 @@ fun ResultDisplayCard(
           }
         }
 
-        // 2. Simpan ke Galeri (Tombol sekunder bergaya kaca transparan)
+        // 2. Simpan ke Galeri (Langsung kembali ke awal & hapus pilihan video)
         Box(
           modifier = Modifier
             .fillMaxWidth()
@@ -316,7 +358,7 @@ fun ResultDisplayCard(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-              text = "Simpan ke Galeri",
+              text = if (result.segments.size == 1) "Simpan ke Galeri" else "Simpan Semua ke Galeri",
               fontWeight = FontWeight.SemiBold,
               color = IOSTextPrimary,
               fontSize = 15.sp
