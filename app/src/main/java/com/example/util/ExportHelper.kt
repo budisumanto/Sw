@@ -100,12 +100,15 @@ object ExportHelper {
   fun shareToLinkedWhatsApp(context: Context, segment: VideoSegment, normalizedPhone: String) {
     try {
       val contentUri = getContentUri(context, segment.file)
-      val jid = "$normalizedPhone@s.whatsapp.net"
       val intent = Intent(Intent.ACTION_SEND).apply {
         type = "video/mp4"
         putExtra(Intent.EXTRA_STREAM, contentUri)
-        putExtra("jid", jid)
-        putExtra(Intent.EXTRA_TEXT, "✨ Status HD (100% Kualitas Asli) - Teruskan (Forward) video ini ke Status Anda.")
+        if (normalizedPhone.isNotBlank()) {
+          putExtra("jid", "$normalizedPhone@s.whatsapp.net")
+        } else {
+          putExtra("jid", "status@broadcast")
+        }
+        putExtra(Intent.EXTRA_TEXT, "✨ Status HD (Kualitas Asli) - Teruskan (Forward) video ini ke Status Anda.")
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         setPackage("com.whatsapp")
@@ -122,7 +125,9 @@ object ExportHelper {
           val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
             type = "video/mp4"
             putExtra(Intent.EXTRA_STREAM, contentUri)
-            putExtra("jid", jid)
+            if (normalizedPhone.isNotBlank()) {
+              putExtra("jid", "$normalizedPhone@s.whatsapp.net")
+            }
             putExtra(Intent.EXTRA_TEXT, "✨ Status HD - Teruskan ke Status Anda")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -148,11 +153,12 @@ object ExportHelper {
       for (seg in segments) {
         uris.add(getContentUri(context, seg.file))
       }
-      val jid = "$normalizedPhone@s.whatsapp.net"
       val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
         type = "video/mp4"
         putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-        putExtra("jid", jid)
+        if (normalizedPhone.isNotBlank()) {
+          putExtra("jid", "$normalizedPhone@s.whatsapp.net")
+        }
         putExtra(Intent.EXTRA_TEXT, "✨ Status HD (Semua Bagian) - Teruskan (Forward) ke Status Anda.")
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

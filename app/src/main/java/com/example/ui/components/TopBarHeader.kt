@@ -127,8 +127,7 @@ fun TopBarHeader(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
           text = if (linkedAccount.isLinked) {
-            val shortPhone = linkedAccount.normalizedPhoneNumber.takeLast(4)
-            "WA: ••$shortPhone"
+            "Tertaut"
           } else {
             "Tautkan WA"
           },

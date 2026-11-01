@@ -49,12 +49,14 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     val isLinked = prefs.getBoolean("wa_is_linked", false)
     val raw = prefs.getString("wa_raw_phone", "") ?: ""
     val norm = prefs.getString("wa_norm_phone", "") ?: ""
+    val label = prefs.getString("wa_device_label", "Perangkat Tertaut (WhatsApp Web)") ?: "Perangkat Tertaut"
     val time = prefs.getLong("wa_linked_at", 0L)
     return LinkedWhatsAppAccount(
       rawPhoneNumber = raw,
       normalizedPhoneNumber = norm,
-      isLinked = isLinked && norm.isNotBlank(),
-      linkedAtTimestamp = time
+      isLinked = isLinked,
+      linkedAtTimestamp = time,
+      deviceLabel = label
     )
   }
 
@@ -64,6 +66,21 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun closeLinkDialog() {
     _showLinkDialog.value = false
+  }
+
+  fun markCompanionLinked(label: String = "Perangkat Tertaut (WhatsApp Web)") {
+    val now = System.currentTimeMillis()
+    prefs.edit()
+      .putBoolean("wa_is_linked", true)
+      .putString("wa_device_label", label)
+      .putLong("wa_linked_at", now)
+      .apply()
+
+    _linkedAccount.value = _linkedAccount.value.copy(
+      isLinked = true,
+      deviceLabel = label,
+      linkedAtTimestamp = now
+    )
   }
 
   fun linkWhatsAppNumber(context: Context, rawNumber: String): Boolean {
@@ -78,6 +95,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       .putBoolean("wa_is_linked", true)
       .putString("wa_raw_phone", rawNumber.trim())
       .putString("wa_norm_phone", normalized)
+      .putString("wa_device_label", "WA: +$normalized")
       .putLong("wa_linked_at", now)
       .apply()
 
@@ -85,7 +103,8 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       rawPhoneNumber = rawNumber.trim(),
       normalizedPhoneNumber = normalized,
       isLinked = true,
-      linkedAtTimestamp = now
+      linkedAtTimestamp = now,
+      deviceLabel = "WA: +$normalized"
     )
     _showLinkDialog.value = false
     Toast.makeText(context, "WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
@@ -97,6 +116,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       .remove("wa_is_linked")
       .remove("wa_raw_phone")
       .remove("wa_norm_phone")
+      .remove("wa_device_label")
       .remove("wa_linked_at")
       .apply()
 

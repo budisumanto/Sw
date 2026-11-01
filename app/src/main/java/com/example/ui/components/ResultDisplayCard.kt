@@ -323,11 +323,11 @@ fun ResultDisplayCard(
               Spacer(modifier = Modifier.width(8.dp))
               Text(
                 text = if (!linkedAccount.isLinked) {
-                  "Hubungkan WhatsApp & Kirim"
+                  "Tautkan Perangkat & Kirim"
                 } else if (result.segments.size == 1) {
-                  "Kirim ke WhatsApp Saya"
+                  "Kirim Otomatis ke WhatsApp Saya"
                 } else {
-                  "Kirim ke WhatsApp Saya (${result.segments.size} Bagian)"
+                  "Kirim Otomatis ke WhatsApp (${result.segments.size} Bagian)"
                 },
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
@@ -352,9 +352,9 @@ fun ResultDisplayCard(
             Column {
               Text(
                 text = if (linkedAccount.isLinked) {
-                  "Otomatis dikirim ke ${linkedAccount.formattedDisplayNumber}. Buka chat nomor Anda di WhatsApp, lalu tekan Teruskan (Forward) ke Status untuk kualitas 100% HD tanpa kompresi."
+                  "Perangkat Tertaut aktif (${linkedAccount.formattedDisplayNumber}). Video dikirim langsung ke chat pribadi Anda lalu diteruskan (Forward) ke Status tanpa kompresi."
                 } else {
-                  "Tautkan nomor WhatsApp Anda agar video dikirim ke chat pribadi Anda lalu diteruskan ke Status tanpa kompresi."
+                  "Tautkan WhatsApp Anda (Perangkat Tertaut) agar video dikirim otomatis ke akun Anda tanpa kompresi."
                 },
                 fontSize = 11.sp,
                 color = IOSTextSecondary,

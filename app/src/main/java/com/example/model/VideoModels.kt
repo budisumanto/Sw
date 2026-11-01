@@ -115,21 +115,26 @@ data class LinkedWhatsAppAccount(
   val rawPhoneNumber: String = "",
   val normalizedPhoneNumber: String = "",
   val isLinked: Boolean = false,
-  val linkedAtTimestamp: Long = 0L
+  val linkedAtTimestamp: Long = 0L,
+  val deviceLabel: String = "WhatsApp Web Companion",
+  val connectionMethod: String = "LINKED_DEVICE" // "LINKED_DEVICE" or "PHONE_JID"
 ) {
   val formattedDisplayNumber: String
     get() {
-      if (!isLinked || normalizedPhoneNumber.isBlank()) return "Belum Terhubung"
-      val clean = normalizedPhoneNumber
-      return if (clean.startsWith("62") && clean.length >= 10) {
-        val rest = clean.substring(2)
-        val part1 = rest.take(3)
-        val part2 = rest.drop(3).take(4)
-        val part3 = rest.drop(7)
-        "+62 $part1-$part2-$part3"
-      } else {
-        "+$clean"
+      if (!isLinked) return "Belum Terhubung"
+      if (normalizedPhoneNumber.isNotBlank()) {
+        val clean = normalizedPhoneNumber
+        return if (clean.startsWith("62") && clean.length >= 10) {
+          val rest = clean.substring(2)
+          val part1 = rest.take(3)
+          val part2 = rest.drop(3).take(4)
+          val part3 = rest.drop(7)
+          "+62 $part1-$part2-$part3"
+        } else {
+          "+$clean"
+        }
       }
+      return deviceLabel
     }
 }
 
