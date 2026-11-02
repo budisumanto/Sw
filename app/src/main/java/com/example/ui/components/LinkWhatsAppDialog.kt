@@ -1,12 +1,12 @@
 package com.example.ui.components
 
-import android.graphics.Bitmap
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,19 +15,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -37,8 +35,10 @@ import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Tab
@@ -48,6 +48,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -67,21 +67,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.model.LinkedWhatsAppAccount
-import com.example.model.generateRandomPairingCode
 import com.example.model.normalizePhoneNumber
+import com.example.service.WhatsAppWebAuthStatus
+import com.example.service.WhatsAppWebManager
 import com.example.ui.theme.ElectricMint
 import com.example.ui.theme.ElectricMintDark
 import com.example.ui.theme.IOSTextPrimary
 import com.example.ui.theme.IOSTextSecondary
 import com.example.ui.theme.IOSTextTertiary
-import com.example.util.QRCodeGenerator
-import kotlinx.coroutines.delay
 
 @Composable
 fun LinkWhatsAppDialog(
@@ -95,52 +94,28 @@ fun LinkWhatsAppDialog(
   val context = LocalContext.current
   val clipboardManager = LocalClipboardManager.current
 
-  // Tab 0: Pindai Kode QR | Tab 1: Kode Pairing Nomor Telepon (8 Karakter)
   var selectedTab by remember {
     mutableIntStateOf(if (linkedAccount.isLinked && linkedAccount.connectionMethod == "PAIRING_CODE") 1 else 0)
   }
 
-  // QR State
-  var qrSessionSeed by remember { mutableStateOf("WA-${System.currentTimeMillis()}") }
-  var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
-  var qrCountdown by remember { mutableIntStateOf(60) }
+  val authStatus by WhatsAppWebManager.authStatus.collectAsState()
+  val detectedCode by WhatsAppWebManager.detectedPairingCode.collectAsState()
 
-  // Pairing Code State
   var phoneInput by remember { mutableStateOf(linkedAccount.rawPhoneNumber) }
-  var generatedPairingCode by remember {
-    mutableStateOf(linkedAccount.activePairingCode.ifBlank { "" })
-  }
-  var pairingCodeTimer by remember { mutableIntStateOf(180) }
-  var isCodeGenerated by remember { mutableStateOf(linkedAccount.activePairingCode.isNotBlank()) }
+  var isRequestingPairingCode by remember { mutableStateOf(false) }
 
-  // Generate / Regenerate QR Bitmap whenever seed changes
-  LaunchedEffect(qrSessionSeed) {
-    val companionQrData = "2@$qrSessionSeed,StatusHDCompanion,BaileysMultiDevice"
-    qrBitmap = QRCodeGenerator.generateBitmap(
-      content = companionQrData,
-      pixelSize = 480,
-      foregroundColor = android.graphics.Color.BLACK,
-      backgroundColor = android.graphics.Color.WHITE
-    )
-    qrCountdown = 60
-  }
-
-  // QR Countdown loop
-  LaunchedEffect(qrSessionSeed, qrCountdown) {
-    if (qrCountdown > 0) {
-      delay(1000)
-      qrCountdown -= 1
-    } else {
-      // Auto-refresh QR session
-      qrSessionSeed = "WA-${System.currentTimeMillis()}"
+  // Listen for successful authentication from WebView
+  LaunchedEffect(Unit) {
+    WhatsAppWebManager.setOnAuthSuccessListener {
+      onConfirmLinkedCompanion("WhatsApp Web Companion (Resmi)")
+      Toast.makeText(context, "WhatsApp Berhasil Terhubung!", Toast.LENGTH_LONG).show()
+      onDismiss()
     }
   }
 
-  // Pairing code timer loop
-  LaunchedEffect(isCodeGenerated, pairingCodeTimer) {
-    if (isCodeGenerated && pairingCodeTimer > 0) {
-      delay(1000)
-      pairingCodeTimer -= 1
+  LaunchedEffect(detectedCode) {
+    if (detectedCode.isNotBlank()) {
+      isRequestingPairingCode = false
     }
   }
 
@@ -169,16 +144,14 @@ fun LinkWhatsAppDialog(
           ),
           RoundedCornerShape(32.dp)
         )
-        .padding(20.dp)
+        .padding(18.dp)
         .testTag("link_whatsapp_dialog")
     ) {
       Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        // Baris Atas: Ikon Perangkat Tertaut + Tombol Tutup
+        // Header
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
@@ -187,7 +160,7 @@ fun LinkWhatsAppDialog(
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
               modifier = Modifier
-                .size(44.dp)
+                .size(42.dp)
                 .clip(CircleShape)
                 .background(
                   Brush.radialGradient(
@@ -207,20 +180,20 @@ fun LinkWhatsAppDialog(
                 imageVector = if (linkedAccount.isLinked) Icons.Default.CheckCircle else Icons.Default.Devices,
                 contentDescription = null,
                 tint = ElectricMint,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
               )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
               Text(
                 text = "Perangkat Tertaut",
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = IOSTextPrimary,
                 letterSpacing = (-0.3).sp
               )
               Text(
-                text = if (linkedAccount.isLinked) "Status: Terhubung & Aktif" else "Pilih Opsi Penautan WhatsApp",
+                text = if (linkedAccount.isLinked) "Status: Terhubung & Aktif" else "WhatsApp Web Engine Resmi",
                 fontSize = 12.sp,
                 color = if (linkedAccount.isLinked) ElectricMint else Color(0xFFFF9F0A),
                 fontWeight = FontWeight.Medium
@@ -245,11 +218,9 @@ fun LinkWhatsAppDialog(
           }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // TAB NAVIGATION: 2 Opsi Jelas
-        // Opsi 1: Pindai Kode QR
-        // Opsi 2: Tautkan via Kode Telepon (8 Karakter)
+        // Tab Navigation
         TabRow(
           selectedTabIndex = selectedTab,
           containerColor = Color.White.copy(alpha = 0.04f),
@@ -280,7 +251,7 @@ fun LinkWhatsAppDialog(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                  text = "Opsi 1: Scan QR",
+                  text = "Opsi 1: Scan QR Resmi",
                   fontSize = 12.sp,
                   fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                   color = if (selectedTab == 0) IOSTextPrimary else IOSTextSecondary
@@ -312,17 +283,17 @@ fun LinkWhatsAppDialog(
           )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Jika akun saat ini sudah terhubung, tampilkan kartu status aktif di atas
+        // Card Linked Account (if already linked)
         if (linkedAccount.isLinked) {
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(20.dp))
+              .clip(RoundedCornerShape(18.dp))
               .background(ElectricMint.copy(alpha = 0.12f))
-              .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
-              .padding(14.dp)
+              .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.4f)), RoundedCornerShape(18.dp))
+              .padding(12.dp)
           ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
               Box(
@@ -341,7 +312,7 @@ fun LinkWhatsAppDialog(
                 )
                 Text(
                   text = linkedAccount.formattedDisplayNumber,
-                  fontSize = 14.sp,
+                  fontSize = 13.sp,
                   fontWeight = FontWeight.SemiBold,
                   color = IOSTextPrimary
                 )
@@ -352,9 +323,8 @@ fun LinkWhatsAppDialog(
                   .background(Color(0xFFFF453A).copy(alpha = 0.15f))
                   .border(BorderStroke(1.dp, Color(0xFFFF453A).copy(alpha = 0.35f)), RoundedCornerShape(10.dp))
                   .clickable {
+                    WhatsAppWebManager.clearSession()
                     onUnlink()
-                    isCodeGenerated = false
-                    generatedPairingCode = ""
                   }
                   .padding(horizontal = 10.dp, vertical = 6.dp)
                   .testTag("unlink_number_button")
@@ -377,116 +347,108 @@ fun LinkWhatsAppDialog(
               }
             }
           }
-          Spacer(modifier = Modifier.height(14.dp))
+          Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ==============================================================
-        // OPSI 1: PINDAI KODE QR (NATIVE QR MATRIX, 100% VISIBLE & SHARP)
-        // ==============================================================
+        // Web Engine Progress indicator
+        if (authStatus is WhatsAppWebAuthStatus.Loading) {
+          val progress = (authStatus as WhatsAppWebAuthStatus.Loading).progress
+          LinearProgressIndicator(
+            progress = { progress / 100f },
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(4.dp)
+              .clip(RoundedCornerShape(2.dp)),
+            color = ElectricMint,
+            trackColor = Color.White.copy(alpha = 0.1f)
+          )
+          Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        // =========================================================
+        // TAB 0: RESMI WHATSAPP WEB QR CODE ENGINE
+        // =========================================================
         if (selectedTab == 0) {
-          // Petunjuk Langkah WhatsApp (Sesuai Screenshot User)
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(18.dp))
+              .clip(RoundedCornerShape(16.dp))
               .background(Color.White.copy(alpha = 0.05f))
-              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), RoundedCornerShape(18.dp))
-              .padding(14.dp)
+              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), RoundedCornerShape(16.dp))
+              .padding(12.dp)
           ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
               Text(
-                text = "📷 Cara Pindai Kode QR:",
-                fontSize = 13.sp,
+                text = "📷 QR Code Resmi WhatsApp Web:",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = ElectricMint
               )
               Text(
-                text = "1. Buka WhatsApp di HP Anda > Titik Tiga (⋮) atau Pengaturan",
-                fontSize = 12.sp,
+                text = "1. Buka WhatsApp di HP Anda > Titik Tiga (⋮) > Perangkat Tertaut",
+                fontSize = 11.sp,
                 color = IOSTextSecondary,
-                lineHeight = 16.sp
+                lineHeight = 15.sp
               )
               Text(
-                text = "2. Pilih 'Perangkat Tertaut' lalu ketuk 'Tautkan Perangkat'",
-                fontSize = 12.sp,
+                text = "2. Ketuk 'Tautkan Perangkat' lalu arahkan kamera ke QR di bawah ini.",
+                fontSize = 11.sp,
                 color = IOSTextSecondary,
-                lineHeight = 16.sp
-              )
-              Text(
-                text = "3. Arahkan kamera WhatsApp ke Kode QR di bawah ini.",
-                fontSize = 12.sp,
-                color = IOSTextSecondary,
-                lineHeight = 16.sp
+                lineHeight = 15.sp
               )
             }
           }
 
-          Spacer(modifier = Modifier.height(16.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
-          // Wadah Kode QR Native (Pasti Muncul, Kontras Tinggi & Bersih)
+          // Authentic WhatsApp Web WebView Viewport
           Box(
             modifier = Modifier
-              .size(240.dp)
-              .clip(RoundedCornerShape(24.dp))
-              .background(Color.White)
-              .border(
-                BorderStroke(2.dp, Brush.verticalGradient(listOf(ElectricMint, ElectricMintDark))),
-                RoundedCornerShape(24.dp)
-              )
-              .padding(14.dp)
+              .fillMaxWidth()
+              .height(260.dp)
+              .clip(RoundedCornerShape(20.dp))
+              .background(Color(0xFF06090E))
+              .border(BorderStroke(1.5.dp, ElectricMint.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
               .testTag("qr_code_display_box"),
             contentAlignment = Alignment.Center
           ) {
-            qrBitmap?.let { bmp ->
-              Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = "Kode QR WhatsApp Companion",
-                modifier = Modifier.size(212.dp)
-              )
-            }
+            AndroidView(
+              modifier = Modifier.fillMaxSize(),
+              factory = { ctx ->
+                WhatsAppWebManager.getOrCreateWebView(ctx).apply {
+                  (parent as? ViewGroup)?.removeView(this)
+                  layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                  )
+                }
+              },
+              update = { view ->
+                (view.parent as? ViewGroup)?.let {
+                  // Already safely attached to this container
+                }
+              }
+            )
 
-            // WhatsApp Center Emblem
-            Box(
-              modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF25D366))
-                .border(BorderStroke(2.dp, Color.White), CircleShape),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.PhoneAndroid,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
-              )
+            if (authStatus is WhatsAppWebAuthStatus.Initializing) {
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(
+                  modifier = Modifier.size(32.dp),
+                  color = ElectricMint,
+                  strokeWidth = 3.dp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                  text = "Memuat Server WhatsApp Web...",
+                  fontSize = 12.sp,
+                  color = IOSTextSecondary
+                )
+              }
             }
           }
 
-          Spacer(modifier = Modifier.height(10.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
-          // Indikator Waktu Kedaluwarsa QR
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            Text(
-              text = "Kode QR berganti dalam: ",
-              fontSize = 12.sp,
-              color = IOSTextTertiary
-            )
-            Text(
-              text = "${qrCountdown}s",
-              fontSize = 12.sp,
-              fontWeight = FontWeight.Bold,
-              color = ElectricMint
-            )
-          }
-
-          Spacer(modifier = Modifier.height(14.dp))
-
-          // Tombol Tindakan QR
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -499,8 +461,8 @@ fun LinkWhatsAppDialog(
                 .background(Color.White.copy(alpha = 0.08f))
                 .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)), RoundedCornerShape(14.dp))
                 .clickable {
-                  qrSessionSeed = "WA-${System.currentTimeMillis()}"
-                  Toast.makeText(context, "Memperbarui Kode QR...", Toast.LENGTH_SHORT).show()
+                  WhatsAppWebManager.reload()
+                  Toast.makeText(context, "Memuat ulang WhatsApp Web...", Toast.LENGTH_SHORT).show()
                 }
                 .testTag("refresh_qr_button"),
               contentAlignment = Alignment.Center
@@ -514,8 +476,8 @@ fun LinkWhatsAppDialog(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                  text = "Perbarui QR",
-                  fontSize = 13.sp,
+                  text = "Muat Ulang QR",
+                  fontSize = 12.sp,
                   fontWeight = FontWeight.Medium,
                   color = IOSTextPrimary
                 )
@@ -524,76 +486,57 @@ fun LinkWhatsAppDialog(
 
             Box(
               modifier = Modifier
-                .weight(1.3f)
+                .weight(1.2f)
                 .height(44.dp)
                 .clip(RoundedCornerShape(14.dp))
                 .background(Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark)))
                 .clickable {
-                  onConfirmLinkedCompanion("Perangkat Tertaut (QR Scan)")
-                  Toast.makeText(context, "WhatsApp Berhasil Ditautkan via QR!", Toast.LENGTH_SHORT).show()
+                  onConfirmLinkedCompanion("WhatsApp Web Companion (Resmi)")
+                  Toast.makeText(context, "WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
                   onDismiss()
                 }
                 .testTag("confirm_qr_linked_button"),
               contentAlignment = Alignment.Center
             ) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                  imageVector = Icons.Default.Check,
-                  contentDescription = null,
-                  tint = Color(0xFF022115),
-                  modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                  text = "Sudah Pindai QR",
-                  fontSize = 13.sp,
-                  fontWeight = FontWeight.Bold,
-                  color = Color(0xFF022115)
-                )
-              }
+              Text(
+                text = "Sudah Pindai QR",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF022115)
+              )
             }
           }
         } else {
-          // ==============================================================
-          // OPSI 2: TAUTKAN VIA KODE TELEPON (KODE PAIRING 8-KARAKTER)
-          // ==============================================================
+          // =========================================================
+          // TAB 1: KODE PAIRING 8-KARAKTER RESMI DARI SERVER WHATSAPP
+          // =========================================================
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(18.dp))
+              .clip(RoundedCornerShape(16.dp))
               .background(Color.White.copy(alpha = 0.05f))
-              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), RoundedCornerShape(18.dp))
-              .padding(14.dp)
+              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), RoundedCornerShape(16.dp))
+              .padding(12.dp)
           ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
               Text(
-                text = "🔑 Tautkan dengan Kode Telepon 8-Karakter:",
-                fontSize = 13.sp,
+                text = "🔑 Tautkan via Nomor Telepon:",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = ElectricMint
               )
               Text(
-                text = "Metode ini tidak memerlukan pemindaian kamera. Masukkan nomor Anda untuk mendapatkan 8 digit kode pairing resmi.",
-                fontSize = 12.sp,
+                text = "Masukkan nomor Anda. Sistem akan meminta 8 digit kode pairing resmi langsung dari server WhatsApp.",
+                fontSize = 11.sp,
                 color = IOSTextSecondary,
-                lineHeight = 16.sp
+                lineHeight = 15.sp
               )
             }
           }
 
-          Spacer(modifier = Modifier.height(14.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
-          // Input Nomor Telepon WhatsApp
-          Text(
-            text = "Nomor WhatsApp Anda:",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = IOSTextPrimary,
-            modifier = Modifier.fillMaxWidth()
-          )
-
-          Spacer(modifier = Modifier.height(8.dp))
-
+          // Phone input
           OutlinedTextField(
             value = phoneInput,
             onValueChange = { phoneInput = it },
@@ -602,9 +545,9 @@ fun LinkWhatsAppDialog(
               .testTag("whatsapp_pairing_phone_input"),
             placeholder = {
               Text(
-                text = "08123456789 atau +62812...",
+                text = "Contoh: 0881010271751 atau 62881...",
                 color = IOSTextTertiary,
-                fontSize = 14.sp
+                fontSize = 13.sp
               )
             },
             leadingIcon = {
@@ -612,7 +555,7 @@ fun LinkWhatsAppDialog(
                 imageVector = Icons.Default.PhoneAndroid,
                 contentDescription = null,
                 tint = ElectricMint,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
               )
             },
             singleLine = true,
@@ -624,9 +567,8 @@ fun LinkWhatsAppDialog(
               onDone = {
                 val clean = normalizePhoneNumber(phoneInput)
                 if (clean.length >= 9) {
-                  generatedPairingCode = generateRandomPairingCode()
-                  isCodeGenerated = true
-                  pairingCodeTimer = 180
+                  isRequestingPairingCode = true
+                  WhatsAppWebManager.triggerPairWithPhone(clean)
                 }
               }
             ),
@@ -641,71 +583,125 @@ fun LinkWhatsAppDialog(
             )
           )
 
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(10.dp))
 
-          // Tombol "Dapatkan Kode Pairing"
+          // Button Minta Kode Pairing Resmi
+          val isValidPhone = phoneInput.trim().length >= 9
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .height(46.dp)
+              .height(44.dp)
               .clip(RoundedCornerShape(14.dp))
               .background(
-                if (phoneInput.trim().length >= 9) {
+                if (isValidPhone) {
                   Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark))
                 } else {
                   Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.10f)))
                 }
               )
-              .clickable(enabled = phoneInput.trim().length >= 9) {
-                generatedPairingCode = generateRandomPairingCode()
-                isCodeGenerated = true
-                pairingCodeTimer = 180
-                Toast.makeText(context, "Kode Pairing WhatsApp Berhasil Dibuat!", Toast.LENGTH_SHORT).show()
+              .clickable(enabled = isValidPhone && !isRequestingPairingCode) {
+                val clean = normalizePhoneNumber(phoneInput)
+                isRequestingPairingCode = true
+                WhatsAppWebManager.triggerPairWithPhone(clean)
+                Toast.makeText(context, "Meminta kode pairing resmi dari WhatsApp...", Toast.LENGTH_SHORT).show()
               }
               .testTag("generate_pairing_code_button"),
             contentAlignment = Alignment.Center
           ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(
-                imageVector = Icons.Default.Key,
-                contentDescription = null,
-                tint = if (phoneInput.trim().length >= 9) Color(0xFF022115) else IOSTextTertiary,
-                modifier = Modifier.size(16.dp)
-              )
-              Spacer(modifier = Modifier.width(6.dp))
+              if (isRequestingPairingCode) {
+                CircularProgressIndicator(
+                  modifier = Modifier.size(16.dp),
+                  color = Color(0xFF022115),
+                  strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                  text = "Menghubungi Server WhatsApp...",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 12.sp,
+                  color = Color(0xFF022115)
+                )
+              } else {
+                Icon(
+                  imageVector = Icons.Default.Key,
+                  contentDescription = null,
+                  tint = if (isValidPhone) Color(0xFF022115) else IOSTextTertiary,
+                  modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                  text = if (detectedCode.isNotBlank()) "Minta Kode Baru" else "Dapatkan Kode Pairing Resmi",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 12.sp,
+                  color = if (isValidPhone) Color(0xFF022115) else IOSTextTertiary
+                )
+              }
+            }
+          }
+
+          // Instructions for entering code into WhatsApp
+          Spacer(modifier = Modifier.height(12.dp))
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(16.dp))
+              .background(ElectricMint.copy(alpha = 0.08f))
+              .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.25f)), RoundedCornerShape(16.dp))
+              .padding(12.dp)
+          ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
               Text(
-                text = if (isCodeGenerated) "Perbarui Kode Pairing" else "Dapatkan Kode Pairing",
+                text = "📲 Masukkan di WhatsApp Anda:",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = if (phoneInput.trim().length >= 9) Color(0xFF022115) else IOSTextTertiary
+                color = ElectricMint
+              )
+              Text(
+                text = "1. Buka WhatsApp > Perangkat Tertaut > Tautkan Perangkat",
+                fontSize = 11.sp,
+                color = IOSTextSecondary,
+                lineHeight = 15.sp
+              )
+              Text(
+                text = "2. Ketuk 'Tautkan dengan nomor telepon saja' di bagian bawah",
+                fontSize = 11.sp,
+                color = IOSTextSecondary,
+                lineHeight = 15.sp
+              )
+              Text(
+                text = "3. Masukkan kode 8 karakter resmi yang muncul di layar",
+                fontSize = 11.sp,
+                color = IOSTextSecondary,
+                lineHeight = 15.sp
               )
             }
           }
 
-          // TAMPILAN KODE 8-KARAKTER RESMI WHATSAPP
+          // If code is detected from official DOM, display prominently
+          val activeCode = detectedCode.ifBlank { "" }
           AnimatedVisibility(
-            visible = isCodeGenerated && generatedPairingCode.isNotBlank(),
+            visible = activeCode.isNotBlank(),
             enter = fadeIn(),
             exit = fadeOut()
           ) {
             Column(
               modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp),
+                .padding(top = 12.dp),
               horizontalAlignment = Alignment.CenterHorizontally
             ) {
               Text(
-                text = "KODE PAIRING WHATSAPP ANDA",
+                text = "KODE PAIRING RESMI WHATSAPP",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = ElectricMint,
                 letterSpacing = 1.sp
               )
 
-              Spacer(modifier = Modifier.height(10.dp))
+              Spacer(modifier = Modifier.height(8.dp))
 
-              // Tampilan 8 Karakter dalam Kotak Monospace
-              val cleanCode = generatedPairingCode.replace("-", "")
+              val cleanCode = activeCode.replace("-", "")
               val p1 = cleanCode.take(4)
               val p2 = cleanCode.drop(4).take(4)
 
@@ -714,7 +710,6 @@ fun LinkWhatsAppDialog(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                // Bagian 1 (4 karakter)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                   p1.forEach { char ->
                     CodeCharacterBox(char = char.toString())
@@ -729,7 +724,6 @@ fun LinkWhatsAppDialog(
                   modifier = Modifier.padding(horizontal = 6.dp)
                 )
 
-                // Bagian 2 (4 karakter)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                   p2.forEach { char ->
                     CodeCharacterBox(char = char.toString())
@@ -737,127 +731,58 @@ fun LinkWhatsAppDialog(
                 }
               }
 
-              Spacer(modifier = Modifier.height(10.dp))
+              Spacer(modifier = Modifier.height(8.dp))
 
-              // Salin Kode + Timer
               Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                  .clip(RoundedCornerShape(10.dp))
+                  .background(Color.White.copy(alpha = 0.08f))
+                  .clickable {
+                    clipboardManager.setText(AnnotatedString(activeCode))
+                    Toast.makeText(context, "Kode disalin: $activeCode", Toast.LENGTH_SHORT).show()
+                  }
+                  .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                Row(
-                  modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .clickable {
-                      clipboardManager.setText(AnnotatedString(generatedPairingCode))
-                      Toast.makeText(context, "Kode disalin: $generatedPairingCode", Toast.LENGTH_SHORT).show()
-                    }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                  verticalAlignment = Alignment.CenterVertically
-                ) {
-                  Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Salin Kode",
-                    tint = ElectricMint,
-                    modifier = Modifier.size(14.dp)
-                  )
-                  Spacer(modifier = Modifier.width(4.dp))
-                  Text(
-                    text = "Salin Kode",
-                    fontSize = 11.sp,
-                    color = ElectricMint,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                }
-
+                Icon(
+                  imageVector = Icons.Default.ContentCopy,
+                  contentDescription = "Salin Kode",
+                  tint = ElectricMint,
+                  modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                  text = "Masa berlaku: ${pairingCodeTimer}s",
+                  text = "Salin Kode",
                   fontSize = 11.sp,
-                  color = if (pairingCodeTimer > 30) IOSTextTertiary else Color(0xFFFF453A),
-                  fontWeight = FontWeight.Medium
+                  color = ElectricMint,
+                  fontWeight = FontWeight.SemiBold
                 )
               }
-
-              Spacer(modifier = Modifier.height(14.dp))
-
-              // Panduan Langkah Masukkan Kode di WhatsApp
-              Box(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .clip(RoundedCornerShape(16.dp))
-                  .background(Color(0xFF10E599).copy(alpha = 0.08f))
-                  .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.25f)), RoundedCornerShape(16.dp))
-                .padding(12.dp)
-              ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                  Text(
-                    text = "📲 Masukkan di WhatsApp Anda Sekarang:",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ElectricMint
-                  )
-                  Text(
-                    text = "1. Buka WhatsApp > Perangkat Tertaut (seperti di screenshot Anda)",
-                    fontSize = 11.sp,
-                    color = IOSTextSecondary,
-                    lineHeight = 15.sp
-                  )
-                  Text(
-                    text = "2. Ketuk tombol hijau 'Tautkan Perangkat'",
-                    fontSize = 11.sp,
-                    color = IOSTextSecondary,
-                    lineHeight = 15.sp
-                  )
-                  Text(
-                    text = "3. Pada layar kamera, ketuk 'Tautkan dengan nomor telepon saja' di bagian bawah",
-                    fontSize = 11.sp,
-                    color = IOSTextSecondary,
-                    lineHeight = 15.sp
-                  )
-                  Text(
-                    text = "4. Masukkan kode 8 karakter di atas: $generatedPairingCode",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = IOSTextPrimary,
-                    lineHeight = 15.sp
-                  )
-                }
-              }
-
-              Spacer(modifier = Modifier.height(14.dp))
-
-              // Tombol Konfirmasi Setelah Memasukkan Kode di WhatsApp
-              Box(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .height(48.dp)
-                  .clip(RoundedCornerShape(16.dp))
-                  .background(Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark)))
-                  .clickable {
-                    onLinkWithPairingCode(phoneInput, generatedPairingCode)
-                    onDismiss()
-                  }
-                  .testTag("confirm_pairing_code_button"),
-                contentAlignment = Alignment.Center
-              ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                  Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Color(0xFF022115),
-                    modifier = Modifier.size(18.dp)
-                  )
-                  Spacer(modifier = Modifier.width(6.dp))
-                  Text(
-                    text = "Verifikasi & Hubungkan Perangkat",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color(0xFF022115)
-                  )
-                }
-              }
             }
+          }
+
+          Spacer(modifier = Modifier.height(14.dp))
+
+          // Tombol Selesai / Konfirmasi
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(44.dp)
+              .clip(RoundedCornerShape(14.dp))
+              .background(Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark)))
+              .clickable {
+                onLinkWithPairingCode(phoneInput, activeCode.ifBlank { "WHATSAPP-WEB" })
+                onDismiss()
+              }
+              .testTag("confirm_pairing_code_button"),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = "Verifikasi & Hubungkan Perangkat",
+              fontWeight = FontWeight.Bold,
+              fontSize = 12.sp,
+              color = Color(0xFF022115)
+            )
           }
         }
       }

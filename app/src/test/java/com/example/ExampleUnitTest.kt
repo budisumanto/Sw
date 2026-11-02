@@ -5,6 +5,7 @@ import com.example.model.OptimizationResult
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.model.formatFileSize
+import com.example.service.WhatsAppWebManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -206,5 +207,11 @@ class ExampleUnitTest {
     // Finder pattern at (0,0) must be true
     assertTrue(matrix[0][0])
   }
-}
 
+  @Test
+  fun `WhatsAppWebManager configured with official desktop web url and desktop agent`() {
+    assertEquals("https://web.whatsapp.com", WhatsAppWebManager.WA_WEB_URL)
+    assertTrue(WhatsAppWebManager.DESKTOP_USER_AGENT.contains("Windows NT"))
+    assertTrue(WhatsAppWebManager.DESKTOP_USER_AGENT.contains("Chrome"))
+  }
+}
