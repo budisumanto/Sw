@@ -186,24 +186,35 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
-  fun shareSegment(context: Context, segment: VideoSegment) {
+  val directSendState: StateFlow<com.example.service.DirectSendState> =
+    com.example.service.WhatsAppCompanionService.sendState
+
+  fun sendDirectToServer(context: Context, segment: VideoSegment) {
     val account = _linkedAccount.value
-    if (!account.isLinked || account.normalizedPhoneNumber.isBlank()) {
+    if (!account.isLinked) {
       _showLinkDialog.value = true
-      Toast.makeText(context, "Hubungkan nomor WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Tautkan WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
       return
     }
-    ExportHelper.shareToLinkedWhatsApp(context, segment, account.normalizedPhoneNumber)
+    com.example.service.WhatsAppCompanionService.sendDirectly(context, segment, account.normalizedPhoneNumber)
   }
 
-  fun shareAll(context: Context, segments: List<VideoSegment>) {
+  fun sendAllDirectToServer(context: Context, segments: List<VideoSegment>) {
     val account = _linkedAccount.value
-    if (!account.isLinked || account.normalizedPhoneNumber.isBlank()) {
+    if (!account.isLinked) {
       _showLinkDialog.value = true
-      Toast.makeText(context, "Hubungkan nomor WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Tautkan WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
       return
     }
-    ExportHelper.shareAllToLinkedWhatsApp(context, segments, account.normalizedPhoneNumber)
+    viewModelScope.launch {
+      for (seg in segments) {
+        com.example.service.WhatsAppCompanionService.sendDirectly(context, seg, account.normalizedPhoneNumber)
+      }
+    }
+  }
+
+  fun resetDirectSendState() {
+    com.example.service.WhatsAppCompanionService.resetState()
   }
 
   fun setPreviewSegment(segment: VideoSegment?) {

@@ -66,6 +66,7 @@ fun StatusHDOptimizerScreen(
   val previewSegment by viewModel.previewSegment.collectAsState()
   val linkedAccount by viewModel.linkedAccount.collectAsState()
   val showLinkDialog by viewModel.showLinkDialog.collectAsState()
+  val directSendState by viewModel.directSendState.collectAsState()
 
   Scaffold(
     modifier = modifier
@@ -207,9 +208,11 @@ fun StatusHDOptimizerScreen(
             ResultDisplayCard(
               result = successState.result,
               linkedAccount = linkedAccount,
+              directSendState = directSendState,
               onOpenLinkDialog = { viewModel.openLinkDialog() },
-              onShareToWhatsApp = { segment -> viewModel.shareSegment(context, segment) },
-              onShareAll = { segments -> viewModel.shareAll(context, segments) },
+              onSendDirectToServer = { segment -> viewModel.sendDirectToServer(context, segment) },
+              onSendAllDirectToServer = { segments -> viewModel.sendAllDirectToServer(context, segments) },
+              onResetDirectSendState = { viewModel.resetDirectSendState() },
               onSaveToGallery = { segment -> viewModel.saveSegment(context, segment) },
               onSaveAllToGallery = { segments -> viewModel.saveAllSegments(context, segments) },
               onPreviewSegment = { segment -> viewModel.setPreviewSegment(segment) },
@@ -226,7 +229,7 @@ fun StatusHDOptimizerScreen(
         VideoPlayerDialog(
           segment = segment,
           onDismiss = { viewModel.setPreviewSegment(null) },
-          onShare = { seg -> viewModel.shareSegment(context, seg) }
+          onShare = { seg -> viewModel.sendDirectToServer(context, seg) }
         )
       }
 

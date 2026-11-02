@@ -2,14 +2,11 @@ package com.example.util
 
 import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.widget.Toast
 import androidx.core.content.FileProvider
-import com.example.model.VideoSegment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -23,170 +20,6 @@ object ExportHelper {
       "${context.packageName}.fileprovider",
       file
     )
-  }
-
-  fun shareToWhatsAppStatus(context: Context, segment: VideoSegment) {
-    try {
-      val contentUri = getContentUri(context, segment.file)
-      val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "video/mp4"
-        putExtra(Intent.EXTRA_STREAM, contentUri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        // Direct WhatsApp intent targeting
-        setPackage("com.whatsapp")
-        // Direct status broadcast flag in WhatsApp
-        putExtra("jid", "status@broadcast")
-      }
-
-      val pm = context.packageManager
-      val canHandleWhatsApp = intent.resolveActivity(pm) != null
-
-      if (canHandleWhatsApp) {
-        context.startActivity(intent)
-      } else {
-        // Fallback to business WhatsApp or general chooser
-        val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-          type = "video/mp4"
-          putExtra(Intent.EXTRA_STREAM, contentUri)
-          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val chooser = Intent.createChooser(fallbackIntent, "Share Status HD Video")
-        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(chooser)
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      Toast.makeText(context, "Could not open WhatsApp: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-  }
-
-  fun shareAllToWhatsApp(context: Context, segments: List<VideoSegment>) {
-    if (segments.isEmpty()) return
-    if (segments.size == 1) {
-      shareToWhatsAppStatus(context, segments.first())
-      return
-    }
-
-    try {
-      val uris = ArrayList<Uri>()
-      for (seg in segments) {
-        uris.add(getContentUri(context, seg.file))
-      }
-
-      val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-        type = "video/mp4"
-        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setPackage("com.whatsapp")
-      }
-
-      val pm = context.packageManager
-      if (intent.resolveActivity(pm) != null) {
-        context.startActivity(intent)
-      } else {
-        val fallbackIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-          type = "video/mp4"
-          putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(fallbackIntent, "Share All Video Segments"))
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      Toast.makeText(context, "Sharing failed: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-  }
-
-  fun shareToLinkedWhatsApp(context: Context, segment: VideoSegment, normalizedPhone: String) {
-    try {
-      val contentUri = getContentUri(context, segment.file)
-      val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "video/mp4"
-        putExtra(Intent.EXTRA_STREAM, contentUri)
-        if (normalizedPhone.isNotBlank()) {
-          putExtra("jid", "$normalizedPhone@s.whatsapp.net")
-        } else {
-          putExtra("jid", "status@broadcast")
-        }
-        putExtra(Intent.EXTRA_TEXT, "✨ Status HD (Kualitas Asli) - Teruskan (Forward) video ini ke Status Anda.")
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        setPackage("com.whatsapp")
-      }
-
-      val pm = context.packageManager
-      if (intent.resolveActivity(pm) != null) {
-        context.startActivity(intent)
-      } else {
-        intent.setPackage("com.whatsapp.w4b")
-        if (intent.resolveActivity(pm) != null) {
-          context.startActivity(intent)
-        } else {
-          val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "video/mp4"
-            putExtra(Intent.EXTRA_STREAM, contentUri)
-            if (normalizedPhone.isNotBlank()) {
-              putExtra("jid", "$normalizedPhone@s.whatsapp.net")
-            }
-            putExtra(Intent.EXTRA_TEXT, "✨ Status HD - Teruskan ke Status Anda")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-          }
-          context.startActivity(Intent.createChooser(fallbackIntent, "Kirim ke WhatsApp Saya"))
-        }
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      Toast.makeText(context, "Gagal membuka WhatsApp: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-  }
-
-  fun shareAllToLinkedWhatsApp(context: Context, segments: List<VideoSegment>, normalizedPhone: String) {
-    if (segments.isEmpty()) return
-    if (segments.size == 1) {
-      shareToLinkedWhatsApp(context, segments.first(), normalizedPhone)
-      return
-    }
-
-    try {
-      val uris = ArrayList<Uri>()
-      for (seg in segments) {
-        uris.add(getContentUri(context, seg.file))
-      }
-      val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-        type = "video/mp4"
-        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-        if (normalizedPhone.isNotBlank()) {
-          putExtra("jid", "$normalizedPhone@s.whatsapp.net")
-        }
-        putExtra(Intent.EXTRA_TEXT, "✨ Status HD (Semua Bagian) - Teruskan (Forward) ke Status Anda.")
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        setPackage("com.whatsapp")
-      }
-
-      val pm = context.packageManager
-      if (intent.resolveActivity(pm) != null) {
-        context.startActivity(intent)
-      } else {
-        intent.setPackage("com.whatsapp.w4b")
-        if (intent.resolveActivity(pm) != null) {
-          context.startActivity(intent)
-        } else {
-          val fallbackIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-            type = "video/mp4"
-            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-            putExtra(Intent.EXTRA_TEXT, "✨ Status HD - Teruskan ke Status Anda")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-          }
-          context.startActivity(Intent.createChooser(fallbackIntent, "Kirim Semua Bagian ke WhatsApp Saya"))
-        }
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      Toast.makeText(context, "Sharing failed: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
   }
 
   suspend fun saveToGallery(context: Context, file: File): Boolean = withContext(Dispatchers.IO) {

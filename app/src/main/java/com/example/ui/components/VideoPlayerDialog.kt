@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -132,7 +132,7 @@ fun VideoPlayerDialog(
             modifier = Modifier
               .weight(1f)
               .height(48.dp)
-              .testTag("dialog_share_status_button"),
+              .testTag("dialog_send_server_button"),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.filledTonalButtonColors(
               containerColor = MintAccent,
@@ -140,12 +140,12 @@ fun VideoPlayerDialog(
             )
           ) {
             Icon(
-              imageVector = Icons.Default.Share,
+              imageVector = Icons.Default.CloudUpload,
               contentDescription = null
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-              text = "Share to Status",
+              text = "Kirim ke Server WhatsApp",
               fontWeight = FontWeight.Bold,
               fontSize = 14.sp
             )
