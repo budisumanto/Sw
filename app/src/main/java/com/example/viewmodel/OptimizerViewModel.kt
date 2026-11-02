@@ -36,6 +36,10 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     clean.length in 10..15
   }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+  // Pop-up modal wajib isi nomor WA jika saat buka aplikasi nomor belum ada
+  private val _showPhonePromptDialog = MutableStateFlow<Boolean>(false)
+  val showPhonePromptDialog: StateFlow<Boolean> = _showPhonePromptDialog.asStateFlow()
+
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
 
@@ -49,6 +53,12 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   val successMessage: StateFlow<String> = _successMessage.asStateFlow()
 
   init {
+    // Cek nomor saat aplikasi pertama kali dibuka
+    val cleanInitial = normalizeWhatsAppPhoneNumber(_phoneNumber.value)
+    if (cleanInitial.length < 10) {
+      _showPhonePromptDialog.value = true
+    }
+
     viewModelScope.launch {
       engine.processingState.collect { state ->
         if (_processingState.value is ProcessingState.Preparing ||
@@ -70,6 +80,18 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   fun updatePhoneNumber(input: String) {
     _phoneNumber.value = input
     prefs.edit().putString("user_phone_number", input).apply()
+  }
+
+  fun savePhoneNumberFromDialog(input: String) {
+    updatePhoneNumber(input)
+    val clean = normalizeWhatsAppPhoneNumber(input)
+    if (clean.length >= 10) {
+      _showPhonePromptDialog.value = false
+    }
+  }
+
+  fun openPhonePromptDialog() {
+    _showPhonePromptDialog.value = true
   }
 
   fun onVideoSelected(uri: Uri, context: Context) {
@@ -97,16 +119,12 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
    */
   fun startFullAutomatedPipeline(context: Context) {
     val rawPhone = _phoneNumber.value.trim()
-    if (rawPhone.isBlank()) {
-      _processingState.value = ProcessingState.Error("Nomor WhatsApp wajib diisi.")
-      Toast.makeText(context, "Nomor WhatsApp wajib diisi", Toast.LENGTH_SHORT).show()
-      return
-    }
-
     val cleanPhone = normalizeWhatsAppPhoneNumber(rawPhone)
+
     if (cleanPhone.length < 10) {
-      _processingState.value = ProcessingState.Error("Silakan masukkan Nomor WhatsApp Anda dengan benar (minimal 10 digit).")
-      Toast.makeText(context, "Nomor WhatsApp tidak valid", Toast.LENGTH_SHORT).show()
+      _showPhonePromptDialog.value = true
+      _processingState.value = ProcessingState.Error("Nomor WhatsApp wajib diisi dengan benar sebelum melanjutkan.")
+      Toast.makeText(context, "Silakan lengkapi Nomor WhatsApp Anda", Toast.LENGTH_SHORT).show()
       return
     }
 

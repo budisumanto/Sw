@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.ExecutionProgressCard
 import com.example.ui.components.PhoneNumberInputCard
+import com.example.ui.components.RequiredPhoneDialog
 import com.example.ui.components.SuccessDialog
 import com.example.ui.components.TopBarHeader
 import com.example.ui.components.VideoSelectorCard
@@ -43,6 +44,7 @@ fun StatusHDOptimizerScreen(
   val context = LocalContext.current
 
   val phoneNumber by viewModel.phoneNumber.collectAsState()
+  val showPhonePromptDialog by viewModel.showPhonePromptDialog.collectAsState()
   val selectedVideo by viewModel.selectedVideo.collectAsState()
   val processingState by viewModel.processingState.collectAsState()
   val showSuccessDialog by viewModel.showSuccessDialog.collectAsState()
@@ -100,10 +102,10 @@ fun StatusHDOptimizerScreen(
         // 1. Top Header Minimalis iOS
         TopBarHeader()
 
-        // 2. Input Nomor WhatsApp (Mendukung +, spasi, strip, 0, 62)
+        // 2. Card Nomor WhatsApp (Estetik, jelas kesan wajibnya, dengan indikator & pesan edukasi)
         PhoneNumberInputCard(
           phoneNumber = phoneNumber,
-          onPhoneNumberChange = { viewModel.updatePhoneNumber(it) }
+          onClickEdit = { viewModel.openPhonePromptDialog() }
         )
 
         // 3. Area Pemilihan Video
@@ -124,7 +126,15 @@ fun StatusHDOptimizerScreen(
         Spacer(modifier = Modifier.height(24.dp))
       }
 
-      // 5. Pop up Success Dialog ("Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status.")
+      // Pop-up Wajib Isi Nomor WhatsApp saat pertama kali buka atau saat diedit
+      if (showPhonePromptDialog) {
+        RequiredPhoneDialog(
+          initialPhone = phoneNumber,
+          onSave = { newPhone -> viewModel.savePhoneNumberFromDialog(newPhone) }
+        )
+      }
+
+      // Pop-up Sukses Kirim ke WhatsApp
       if (showSuccessDialog) {
         SuccessDialog(
           message = successMessage,

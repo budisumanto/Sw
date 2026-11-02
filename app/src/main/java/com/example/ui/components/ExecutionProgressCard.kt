@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,6 +41,7 @@ import com.example.model.ProcessingState
 import com.example.ui.theme.ElectricMint
 import com.example.ui.theme.ElectricMintDark
 import com.example.ui.theme.IOSTextPrimary
+import com.example.ui.theme.IOSTextSecondary
 
 @Composable
 fun ExecutionProgressCard(
@@ -171,6 +173,36 @@ fun ExecutionProgressCard(
             trackColor = Color(0xFFFFFFFF).copy(alpha = 0.08f)
           )
 
+          // Kotak Catatan Edukatif Saat Kompresi: Jangan edit/potong ulang
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(14.dp))
+              .background(Color(0xFF00F2FE).copy(alpha = 0.06f))
+              .border(BorderStroke(1.dp, Color(0xFF00F2FE).copy(alpha = 0.2f)), RoundedCornerShape(14.dp))
+              .padding(12.dp)
+          ) {
+            Row(
+              verticalAlignment = Alignment.Top,
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = Color(0xFF38BDF8),
+                modifier = Modifier
+                  .size(16.dp)
+                  .padding(top = 1.dp)
+              )
+              Text(
+                text = "Penting: Jangan mengedit atau memotong ulang video yang diterima di WhatsApp Anda, karena sistem WhatsApp akan otomatis mengompresi ulang dan menurunkan kualitasnya.",
+                fontSize = 11.sp,
+                color = Color(0xFFBAE6FD),
+                lineHeight = 16.sp
+              )
+            }
+          }
+
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -227,7 +259,6 @@ fun ExecutionProgressCard(
         }
       }
     }
-
 
     is ProcessingState.Cancelled -> {
       IOSLiquidGlassCard(

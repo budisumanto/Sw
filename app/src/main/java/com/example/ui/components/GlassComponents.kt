@@ -66,22 +66,21 @@ fun IOSLiquidGlassCard(
   cornerRadius: Dp = 28.dp,
   padding: Dp = 20.dp,
   fillColor: Color = IOSGlassFill,
+  borderStroke: BorderStroke? = null,
   content: @Composable BoxScope.() -> Unit
 ) {
   val shape = RoundedCornerShape(cornerRadius)
+  val finalBorder = borderStroke ?: BorderStroke(
+    width = 1.dp,
+    brush = Brush.verticalGradient(
+      listOf(IOSGlassHighlightTop, IOSGlassHighlightBottom)
+    )
+  )
   Box(
     modifier = modifier
       .clip(shape)
       .background(fillColor)
-      .border(
-        BorderStroke(
-          width = 1.dp,
-          brush = Brush.verticalGradient(
-            listOf(IOSGlassHighlightTop, IOSGlassHighlightBottom)
-          )
-        ),
-        shape = shape
-      )
+      .border(finalBorder, shape = shape)
       .padding(padding),
     content = content
   )
