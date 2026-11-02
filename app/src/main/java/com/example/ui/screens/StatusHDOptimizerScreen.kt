@@ -1,8 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,8 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.example.model.ProcessingState
 import com.example.ui.components.ExecutionProgressCard
+import com.example.ui.components.PhoneNumberInputCard
 import com.example.ui.components.SuccessDialog
 import com.example.ui.components.TopBarHeader
 import com.example.ui.components.VideoSelectorCard
@@ -45,6 +42,7 @@ fun StatusHDOptimizerScreen(
 ) {
   val context = LocalContext.current
 
+  val phoneNumber by viewModel.phoneNumber.collectAsState()
   val selectedVideo by viewModel.selectedVideo.collectAsState()
   val processingState by viewModel.processingState.collectAsState()
   val showSuccessDialog by viewModel.showSuccessDialog.collectAsState()
@@ -102,13 +100,19 @@ fun StatusHDOptimizerScreen(
         // 1. Top Header Minimalis iOS
         TopBarHeader()
 
-        // 2. Area Pemilihan Video
+        // 2. Input Nomor WhatsApp (Mendukung +, spasi, strip, 0, 62)
+        PhoneNumberInputCard(
+          phoneNumber = phoneNumber,
+          onPhoneNumberChange = { viewModel.updatePhoneNumber(it) }
+        )
+
+        // 3. Area Pemilihan Video
         VideoSelectorCard(
           selectedVideo = selectedVideo,
           onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) }
         )
 
-        // 3. Tombol Aksi Utama ("Optimalkan Kualitas") & Status Berjalan (Compressing / Uploading / Saving)
+        // 4. Tombol Aksi Utama ("Optimalkan Kualitas") & Status Berjalan (Compressing / Uploading)
         ExecutionProgressCard(
           processingState = processingState,
           hasVideoSelected = selectedVideo != null,
@@ -120,7 +124,7 @@ fun StatusHDOptimizerScreen(
         Spacer(modifier = Modifier.height(24.dp))
       }
 
-      // 4. Pop up Success Dialog ("Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status")
+      // 5. Pop up Success Dialog ("Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status.")
       if (showSuccessDialog) {
         SuccessDialog(
           message = successMessage,

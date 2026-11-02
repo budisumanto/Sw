@@ -5,8 +5,11 @@ import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
+import com.example.model.formatDisplayPhoneNumber
 import com.example.model.formatFileSize
+import com.example.model.normalizeWhatsAppPhoneNumber
 import com.example.util.ApiUploader
+import okhttp3.MultipartBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -175,21 +178,40 @@ class ExampleUnitTest {
 
     val state = ProcessingState.Success(result)
     assertEquals(
-      "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status.",
+      "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status.",
       state.message
     )
   }
 
   @Test
-  fun `ApiUploader request includes required x-api-key header and target URL`() {
+  fun `normalizeWhatsAppPhoneNumber normalizes Indonesian numbers accurately`() {
+    assertEquals("6281234567890", normalizeWhatsAppPhoneNumber("+62 812-3456-7890"))
+    assertEquals("6281234567890", normalizeWhatsAppPhoneNumber("081234567890"))
+    assertEquals("6281234567890", normalizeWhatsAppPhoneNumber("6281234567890"))
+    assertEquals("6281234567890", normalizeWhatsAppPhoneNumber("81234567890"))
+    assertEquals("628571234567", normalizeWhatsAppPhoneNumber("0857-1234-567"))
+    assertEquals("628571234567", normalizeWhatsAppPhoneNumber("+628571234567"))
+  }
+
+  @Test
+  fun `formatDisplayPhoneNumber formats phone number for readable UI`() {
+    assertEquals("+62 812-3456-7890", formatDisplayPhoneNumber("081234567890"))
+  }
+
+  @Test
+  fun `ApiUploader request includes phone and video fields with x-api-key header`() {
     val dummyFile = File.createTempFile("test_video", ".mp4").apply {
       writeText("sample video content")
       deleteOnExit()
     }
 
-    val request = ApiUploader.buildUploadRequest(dummyFile)
+    val request = ApiUploader.buildUploadRequest("6281234567890", dummyFile)
 
     assertEquals("https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd", request.url.toString())
     assertEquals("IPUL_GANTENG_123", request.header("x-api-key"))
+
+    val body = request.body as? MultipartBody
+    assertTrue(body != null)
+    assertEquals(2, body!!.parts.size)
   }
 }

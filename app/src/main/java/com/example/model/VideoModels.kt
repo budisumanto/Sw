@@ -97,13 +97,9 @@ sealed interface ProcessingState {
     val statusText: String
   ) : ProcessingState
 
-  data class Saving(
-    val statusText: String
-  ) : ProcessingState
-
   data class Success(
     val result: OptimizationResult,
-    val message: String = "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status."
+    val message: String = "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status."
   ) : ProcessingState
 
   data object Cancelled : ProcessingState
@@ -121,5 +117,50 @@ fun formatFileSize(bytes: Long): String {
     mb >= 1.0 -> String.format("%.1f MB", mb)
     kb >= 1.0 -> String.format("%.1f KB", kb)
     else -> "$bytes B"
+  }
+}
+
+/**
+ * Normalisasi nomor WhatsApp pengguna agar server dapat menerima format standar angka '62...'.
+ * Menerima variasi input: '+', spasi, strip '-', awalan '0', '62', '08', '+628'.
+ * Contoh:
+ *   "+62 812-3456-7890" -> "6281234567890"
+ *   "081234567890"      -> "6281234567890"
+ *   "6281234567890"     -> "6281234567890"
+ *   "81234567890"       -> "6281234567890"
+ */
+fun normalizeWhatsAppPhoneNumber(input: String): String {
+  val digitsOnly = input.replace(Regex("[^0-9]"), "")
+  return when {
+    digitsOnly.startsWith("0") -> "62" + digitsOnly.substring(1)
+    digitsOnly.startsWith("62") -> digitsOnly
+    digitsOnly.startsWith("8") -> "62$digitsOnly"
+    digitsOnly.isNotEmpty() -> "62$digitsOnly"
+    else -> ""
+  }
+}
+
+/**
+ * Memformat nomor untuk tampilan UI yang nyaman dibaca pengguna.
+ * Contoh: "6281234567890" -> "+62 812-3456-7890"
+ */
+fun formatDisplayPhoneNumber(rawOrNormalized: String): String {
+  val clean = normalizeWhatsAppPhoneNumber(rawOrNormalized)
+  if (clean.length < 10) return rawOrNormalized
+  val withoutCountry = clean.substring(2)
+  return when {
+    withoutCountry.length in 9..10 -> {
+      val part1 = withoutCountry.substring(0, 3)
+      val part2 = withoutCountry.substring(3, 7)
+      val part3 = withoutCountry.substring(7)
+      "+62 $part1-$part2-$part3"
+    }
+    withoutCountry.length >= 11 -> {
+      val part1 = withoutCountry.substring(0, 3)
+      val part2 = withoutCountry.substring(3, 7)
+      val part3 = withoutCountry.substring(7)
+      "+62 $part1-$part2-$part3"
+    }
+    else -> "+$clean"
   }
 }

@@ -10,20 +10,23 @@ import com.example.engine.StatusHDOptimizerEngine
 import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
 import com.example.model.VideoMetadata
+import com.example.model.normalizeWhatsAppPhoneNumber
 import com.example.util.ApiUploader
 import com.example.util.ExportHelper
 import com.example.util.VideoMetadataHelper
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
 
   private val engine = StatusHDOptimizerEngine(application)
+  private val prefs = application.getSharedPreferences("status_hd_prefs", Context.MODE_PRIVATE)
+
+  private val _phoneNumber = MutableStateFlow<String>(prefs.getString("user_phone_number", "") ?: "")
+  val phoneNumber: StateFlow<String> = _phoneNumber.asStateFlow()
 
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
@@ -40,7 +43,6 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   init {
     viewModelScope.launch {
       engine.processingState.collect { state ->
-        // Forward engine states during compression
         if (_processingState.value is ProcessingState.Preparing ||
             _processingState.value is ProcessingState.Compressing ||
             _processingState.value is ProcessingState.Idle
@@ -55,6 +57,11 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
         }
       }
     }
+  }
+
+  fun updatePhoneNumber(input: String) {
+    _phoneNumber.value = input
+    prefs.edit().putString("user_phone_number", input).apply()
   }
 
   fun onVideoSelected(uri: Uri, context: Context) {
@@ -72,68 +79,63 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /**
-   * Alur Otomatis Penuh:
-   * 1. Kompres/Encode secara lokal sesuai spek HD.
-   * 2. Upload setiap segmen hasil encode ke http://208.76.40.198:3000/api/send-hd (field: video).
-   * 3. Simpan file hasil encode ke Galeri HP (MediaStore).
-   * 4. Tampilkan dialog sukses "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status".
+   * Alur Baru:
+   * 1. Validasi nomor WhatsApp (format '62...').
+   * 2. Kompres/Encode video secara lokal sesuai standar HD WhatsApp.
+   * 3. Upload hasil encode ke server (field: phone & video) dengan header x-api-key: IPUL_GANTENG_123.
+   * 4. Jika server merespons status: true, tampilkan pop-up:
+   *    "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status."
+   * 5. Jika gagal, tampilkan pesan error yang jelas.
+   * (Fitur simpan otomatis ke Galeri telah dihapus).
    */
   fun startFullAutomatedPipeline(context: Context) {
+    val rawPhone = _phoneNumber.value.trim()
+    val cleanPhone = normalizeWhatsAppPhoneNumber(rawPhone)
+
+    if (cleanPhone.length < 10) {
+      _processingState.value = ProcessingState.Error("Silakan masukkan Nomor WhatsApp Anda dengan benar.")
+      Toast.makeText(context, "Nomor WhatsApp tidak valid", Toast.LENGTH_SHORT).show()
+      return
+    }
+
     val video = _selectedVideo.value ?: return
 
     viewModelScope.launch {
       try {
         _processingState.value = ProcessingState.Preparing("Menyiapkan kualitas terbaik...")
 
-        // Langkah 1: Encode video lokal
+        // Langkah 1: Encode video secara lokal
         val optResult: OptimizationResult? = engine.optimizeVideo(sourceVideo = video)
         if (optResult == null || optResult.segments.isEmpty()) {
-          // Jika dibatalkan atau error, state sudah diset oleh engine
           return@launch
         }
 
         val totalSegments = optResult.segments.size
 
-        // Langkah 2 & 3: Upload dan Simpan ke Galeri untuk setiap segmen
+        // Langkah 2: Upload hasil encode ke server dengan field 'phone' dan 'video'
         for ((index, segment) in optResult.segments.withIndex()) {
           val currentPart = index + 1
 
-          // 2. Upload hasil encode ke server
           _processingState.value = ProcessingState.Uploading(
             activeChunk = currentPart,
             totalChunks = totalSegments,
             statusText = if (totalSegments > 1) {
-              "Mengunggah bagian $currentPart dari $totalSegments..."
+              "Mengirim bagian $currentPart dari $totalSegments ke WhatsApp kamu..."
             } else {
-              "Mengunggah video..."
+              "Mengirim video HD ke WhatsApp kamu..."
             }
           )
 
-          val uploadResult = ApiUploader.uploadVideo(segment.file)
+          val uploadResult = ApiUploader.uploadVideo(phone = cleanPhone, file = segment.file)
           if (uploadResult.isFailure) {
-            val errorMsg = uploadResult.exceptionOrNull()?.localizedMessage ?: "Gagal mengunggah video ke server"
-            _processingState.value = ProcessingState.Error("Gagal upload: $errorMsg")
-            return@launch
-          }
-
-          // 3. Simpan file hasil encode ke Galeri HP (MediaStore)
-          _processingState.value = ProcessingState.Saving(
-            statusText = if (totalSegments > 1) {
-              "Menyimpan bagian $currentPart ke Galeri..."
-            } else {
-              "Menyimpan ke Galeri..."
-            }
-          )
-
-          val saved = ExportHelper.saveToGallery(context, segment.file)
-          if (!saved) {
-            _processingState.value = ProcessingState.Error("Gagal menyimpan video ke Galeri.")
+            val errorMsg = uploadResult.exceptionOrNull()?.localizedMessage ?: "Gagal mengirim video ke server"
+            _processingState.value = ProcessingState.Error("Gagal mengirim: $errorMsg")
             return@launch
           }
         }
 
-        // Langkah 4: Tampilkan pesan sukses
-        val msg = "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status."
+        // Langkah 3: Pop-up Sukses
+        val msg = "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status."
         _successMessage.value = msg
         _processingState.value = ProcessingState.Success(optResult, msg)
         _showSuccessDialog.value = true

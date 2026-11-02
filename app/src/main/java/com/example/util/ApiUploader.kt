@@ -7,6 +7,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -24,12 +25,15 @@ object ApiUploader {
         .build()
 
     /**
-     * Helper to build a request with the required authentication header.
-     * Tanpa header 'x-api-key: IPUL_GANTENG_123', server akan membalas dengan error 403 Forbidden.
+     * Membangun request multipart/form-data dengan 2 field:
+     * - phone: nomor WhatsApp tujuan (format 62...)
+     * - video: file video hasil encode HD
+     * Serta menyertakan Header 'x-api-key: IPUL_GANTENG_123'
      */
-    fun buildUploadRequest(file: File): Request {
+    fun buildUploadRequest(phone: String, file: File): Request {
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
+            .addFormDataPart("phone", phone)
             .addFormDataPart(
                 "video",
                 file.name,
@@ -45,24 +49,44 @@ object ApiUploader {
     }
 
     /**
-     * Uploads the encoded video file to https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd as multipart/form-data.
-     * Field name: "video".
-     * Menyertakan HTTP Header 'x-api-key: IPUL_GANTENG_123' agar server tidak menolak dengan 403 Forbidden.
+     * Mengunggah file video hasil encode HD ke server dengan field 'phone' dan 'video'.
+     * Memvalidasi bahwa server membalas dengan status: true.
      */
-    suspend fun uploadVideo(file: File): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun uploadVideo(phone: String, file: File): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (!file.exists()) {
                 return@withContext Result.failure(IOException("File tidak ditemukan: ${file.absolutePath}"))
             }
 
-            val request = buildUploadRequest(file)
+            val request = buildUploadRequest(phone, file)
 
             client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string().orEmpty()
                 if (response.isSuccessful) {
-                    val responseBody = response.body?.string().orEmpty()
-                    Result.success(responseBody)
+                    try {
+                        val json = JSONObject(responseBody)
+                        val status = json.optBoolean("status", false)
+                        val message = json.optString("message", "")
+                        if (status) {
+                            Result.success(if (message.isNotBlank()) message else responseBody)
+                        } else {
+                            val err = if (message.isNotBlank()) message else "Server menolak pengiriman video"
+                            Result.failure(IOException(err))
+                        }
+                    } catch (e: Exception) {
+                        // Jika respons bukan JSON atau parsing gagal, anggap sukses jika HTTP 200
+                        Result.success(responseBody)
+                    }
                 } else {
-                    Result.failure(IOException("Server error ${response.code}: ${response.message}"))
+                    var errorMsg = "Server error ${response.code}: ${response.message}"
+                    if (responseBody.isNotBlank()) {
+                        try {
+                            val json = JSONObject(responseBody)
+                            val msg = json.optString("message", "")
+                            if (msg.isNotBlank()) errorMsg = msg
+                        } catch (_: Exception) {}
+                    }
+                    Result.failure(IOException(errorMsg))
                 }
             }
         } catch (e: Exception) {

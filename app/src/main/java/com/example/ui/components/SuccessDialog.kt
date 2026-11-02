@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,7 +78,7 @@ fun SuccessDialog(
         }
 
         Text(
-          text = "Berhasil Dioptimalkan!",
+          text = "Berhasil Dikirim!",
           fontSize = 19.sp,
           fontWeight = FontWeight.Bold,
           color = IOSTextPrimary,

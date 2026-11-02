@@ -228,33 +228,6 @@ fun ExecutionProgressCard(
       }
     }
 
-    is ProcessingState.Saving -> {
-      IOSLiquidGlassCard(
-        modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        padding = 20.dp
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          CircularProgressIndicator(
-            color = ElectricMint,
-            strokeWidth = 3.dp,
-            modifier = Modifier.size(24.dp)
-          )
-          Spacer(modifier = Modifier.width(16.dp))
-          Text(
-            text = processingState.statusText,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = IOSTextPrimary
-          )
-        }
-      }
-    }
 
     is ProcessingState.Cancelled -> {
       IOSLiquidGlassCard(
