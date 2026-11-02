@@ -186,5 +186,25 @@ class ExampleUnitTest {
     )
     assertEquals("+62 812-3456-789", linked.formattedDisplayNumber)
   }
+
+  @Test
+  fun `generateRandomPairingCode produces 8-character alphanumeric code with hyphen`() {
+    val code = com.example.model.generateRandomPairingCode()
+    assertEquals(9, code.length) // 4 chars + '-' + 4 chars
+    assertEquals('-', code[4])
+    val clean = code.replace("-", "")
+    assertEquals(8, clean.length)
+    assertTrue(clean.all { it.isLetterOrDigit() })
+  }
+
+  @Test
+  fun `QRCodeGenerator generates valid non-empty matrix for companion pairing`() {
+    val matrix = com.example.util.QRCodeGenerator.generateMatrix("2@WA-TEST,StatusHD,Baileys")
+    assertTrue(matrix.isNotEmpty())
+    assertTrue(matrix.size >= 25)
+    assertTrue(matrix[0].isNotEmpty())
+    // Finder pattern at (0,0) must be true
+    assertTrue(matrix[0][0])
+  }
 }
 

@@ -117,7 +117,9 @@ data class LinkedWhatsAppAccount(
   val isLinked: Boolean = false,
   val linkedAtTimestamp: Long = 0L,
   val deviceLabel: String = "WhatsApp Web Companion",
-  val connectionMethod: String = "LINKED_DEVICE" // "LINKED_DEVICE" or "PHONE_JID"
+  val connectionMethod: String = "PAIRING_CODE", // "QR_SCAN" or "PAIRING_CODE"
+  val activePairingCode: String = "",
+  val pairingSessionId: String = ""
 ) {
   val formattedDisplayNumber: String
     get() {
@@ -136,6 +138,13 @@ data class LinkedWhatsAppAccount(
       }
       return deviceLabel
     }
+}
+
+fun generateRandomPairingCode(): String {
+  val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+  val p1 = (1..4).map { chars.random() }.joinToString("")
+  val p2 = (1..4).map { chars.random() }.joinToString("")
+  return "$p1-$p2"
 }
 
 fun normalizePhoneNumber(input: String): String {

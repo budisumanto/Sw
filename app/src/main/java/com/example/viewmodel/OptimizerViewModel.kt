@@ -51,12 +51,18 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     val norm = prefs.getString("wa_norm_phone", "") ?: ""
     val label = prefs.getString("wa_device_label", "Perangkat Tertaut (WhatsApp Web)") ?: "Perangkat Tertaut"
     val time = prefs.getLong("wa_linked_at", 0L)
+    val method = prefs.getString("wa_method", "PAIRING_CODE") ?: "PAIRING_CODE"
+    val code = prefs.getString("wa_code", "") ?: ""
+    val sessionId = prefs.getString("wa_session_id", "") ?: ""
     return LinkedWhatsAppAccount(
       rawPhoneNumber = raw,
       normalizedPhoneNumber = norm,
       isLinked = isLinked,
       linkedAtTimestamp = time,
-      deviceLabel = label
+      deviceLabel = label,
+      connectionMethod = method,
+      activePairingCode = code,
+      pairingSessionId = sessionId
     )
   }
 
@@ -68,22 +74,37 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     _showLinkDialog.value = false
   }
 
-  fun markCompanionLinked(label: String = "Perangkat Tertaut (WhatsApp Web)") {
+  fun markCompanionLinked(label: String = "Perangkat Tertaut (QR Scan)", method: String = "QR_SCAN") {
     val now = System.currentTimeMillis()
     prefs.edit()
       .putBoolean("wa_is_linked", true)
       .putString("wa_device_label", label)
+      .putString("wa_method", method)
       .putLong("wa_linked_at", now)
       .apply()
 
     _linkedAccount.value = _linkedAccount.value.copy(
       isLinked = true,
       deviceLabel = label,
+      connectionMethod = method,
       linkedAtTimestamp = now
     )
   }
 
-  fun linkWhatsAppNumber(context: Context, rawNumber: String): Boolean {
+  fun generatePairingCodeForPhone(rawNumber: String): String {
+    val code = com.example.model.generateRandomPairingCode()
+    val norm = normalizePhoneNumber(rawNumber)
+    val sessionId = "WA-" + System.currentTimeMillis().toString().takeLast(6)
+    _linkedAccount.value = _linkedAccount.value.copy(
+      rawPhoneNumber = rawNumber,
+      normalizedPhoneNumber = norm,
+      activePairingCode = code,
+      pairingSessionId = sessionId
+    )
+    return code
+  }
+
+  fun confirmPairingCode(context: Context, rawNumber: String, code: String): Boolean {
     val normalized = normalizePhoneNumber(rawNumber)
     if (normalized.length < 9) {
       Toast.makeText(context, "Nomor WhatsApp tidak valid (minimal 9 digit)", Toast.LENGTH_SHORT).show()
@@ -91,11 +112,14 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     val now = System.currentTimeMillis()
+    val displayLabel = "WA: +$normalized (Kode $code)"
     prefs.edit()
       .putBoolean("wa_is_linked", true)
       .putString("wa_raw_phone", rawNumber.trim())
       .putString("wa_norm_phone", normalized)
-      .putString("wa_device_label", "WA: +$normalized")
+      .putString("wa_device_label", displayLabel)
+      .putString("wa_method", "PAIRING_CODE")
+      .putString("wa_code", code)
       .putLong("wa_linked_at", now)
       .apply()
 
@@ -104,11 +128,18 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       normalizedPhoneNumber = normalized,
       isLinked = true,
       linkedAtTimestamp = now,
-      deviceLabel = "WA: +$normalized"
+      deviceLabel = displayLabel,
+      connectionMethod = "PAIRING_CODE",
+      activePairingCode = code
     )
     _showLinkDialog.value = false
-    Toast.makeText(context, "WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, "WhatsApp Berhasil Ditautkan via Kode Pairing!", Toast.LENGTH_SHORT).show()
     return true
+  }
+
+  fun linkWhatsAppNumber(context: Context, rawNumber: String): Boolean {
+    val code = com.example.model.generateRandomPairingCode()
+    return confirmPairingCode(context, rawNumber, code)
   }
 
   fun unlinkWhatsAppNumber(context: Context) {
@@ -117,6 +148,9 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       .remove("wa_raw_phone")
       .remove("wa_norm_phone")
       .remove("wa_device_label")
+      .remove("wa_method")
+      .remove("wa_code")
+      .remove("wa_session_id")
       .remove("wa_linked_at")
       .apply()
 

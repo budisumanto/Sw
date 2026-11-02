@@ -237,8 +237,8 @@ fun StatusHDOptimizerScreen(
       if (showLinkDialog) {
         LinkWhatsAppDialog(
           linkedAccount = linkedAccount,
-          onLinkNumber = { number -> viewModel.linkWhatsAppNumber(context, number) },
-          onConfirmLinkedCompanion = { label -> viewModel.markCompanionLinked(label) },
+          onLinkWithPairingCode = { phone, code -> viewModel.confirmPairingCode(context, phone, code) },
+          onConfirmLinkedCompanion = { label -> viewModel.markCompanionLinked(label, "QR_SCAN") },
           onUnlink = { viewModel.unlinkWhatsAppNumber(context) },
           onDismiss = { viewModel.closeLinkDialog() }
         )
