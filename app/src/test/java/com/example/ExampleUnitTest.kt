@@ -6,6 +6,7 @@ import com.example.model.ProcessingState
 import com.example.model.VideoMetadata
 import com.example.model.VideoSegment
 import com.example.model.formatFileSize
+import com.example.util.ApiUploader
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -177,5 +178,18 @@ class ExampleUnitTest {
       "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status.",
       state.message
     )
+  }
+
+  @Test
+  fun `ApiUploader request includes required x-api-key header and target URL`() {
+    val dummyFile = File.createTempFile("test_video", ".mp4").apply {
+      writeText("sample video content")
+      deleteOnExit()
+    }
+
+    val request = ApiUploader.buildUploadRequest(dummyFile)
+
+    assertEquals("http://208.76.40.198:3000/api/send-hd", request.url.toString())
+    assertEquals("IPUL_GANTENG_123", request.header("x-api-key"))
   }
 }
