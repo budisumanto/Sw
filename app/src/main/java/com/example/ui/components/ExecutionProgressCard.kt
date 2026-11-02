@@ -40,7 +40,6 @@ import com.example.model.ProcessingState
 import com.example.ui.theme.ElectricMint
 import com.example.ui.theme.ElectricMintDark
 import com.example.ui.theme.IOSTextPrimary
-import com.example.ui.theme.IOSTextSecondary
 
 @Composable
 fun ExecutionProgressCard(
@@ -54,7 +53,6 @@ fun ExecutionProgressCard(
   when (processingState) {
     is ProcessingState.Idle -> {
       if (hasVideoSelected) {
-        // State 2: Primary Action Button (Optimalkan Kualitas)
         // Tombol kapsul penuh (56.dp) gradasi cerah Electric Mint ke Emerald
         Button(
           onClick = onStartOptimize,
@@ -126,7 +124,6 @@ fun ExecutionProgressCard(
     }
 
     is ProcessingState.Compressing -> {
-      // State 3: Proses Berjalan (Processing)
       IOSLiquidGlassCard(
         modifier = modifier
           .fillMaxWidth()
@@ -145,9 +142,9 @@ fun ExecutionProgressCard(
           ) {
             Text(
               text = if (processingState.totalChunks > 1) {
-                "Memproses bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+                "Mengompres bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
               } else {
-                "Mengoptimalkan video..."
+                "Mengompres video HD..."
               },
               fontSize = 15.sp,
               fontWeight = FontWeight.SemiBold,
@@ -163,7 +160,6 @@ fun ExecutionProgressCard(
             )
           }
 
-          // Bilah progres melengkung lembut
           LinearProgressIndicator(
             progress = { processingState.overallProgress },
             modifier = Modifier
@@ -175,7 +171,6 @@ fun ExecutionProgressCard(
             trackColor = Color(0xFFFFFFFF).copy(alpha = 0.08f)
           )
 
-          // Tombol kecil outline kaca tipis: "Batalkan"
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -201,6 +196,62 @@ fun ExecutionProgressCard(
               )
             }
           }
+        }
+      }
+    }
+
+    is ProcessingState.Uploading -> {
+      IOSLiquidGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = 24.dp,
+        padding = 20.dp
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          CircularProgressIndicator(
+            color = ElectricMint,
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(24.dp)
+          )
+          Spacer(modifier = Modifier.width(16.dp))
+          Text(
+            text = processingState.statusText,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = IOSTextPrimary
+          )
+        }
+      }
+    }
+
+    is ProcessingState.Saving -> {
+      IOSLiquidGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = 24.dp,
+        padding = 20.dp
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          CircularProgressIndicator(
+            color = ElectricMint,
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(24.dp)
+          )
+          Spacer(modifier = Modifier.width(16.dp))
+          Text(
+            text = processingState.statusText,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = IOSTextPrimary
+          )
         }
       }
     }
@@ -297,7 +348,7 @@ fun ExecutionProgressCard(
     }
 
     is ProcessingState.Success -> {
-      // Handled by ResultDisplayCard
+      // Handled via SuccessDialog
     }
   }
 }

@@ -7,136 +7,54 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.engine.StatusHDOptimizerEngine
-import com.example.model.LinkedWhatsAppAccount
+import com.example.model.OptimizationResult
 import com.example.model.ProcessingState
 import com.example.model.VideoMetadata
-import com.example.model.VideoSegment
-import com.example.model.normalizePhoneNumber
+import com.example.util.ApiUploader
 import com.example.util.ExportHelper
 import com.example.util.VideoMetadataHelper
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
 
   private val engine = StatusHDOptimizerEngine(application)
-  private val prefs = application.getSharedPreferences("status_hd_prefs", Context.MODE_PRIVATE)
 
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
 
-  val processingState: StateFlow<ProcessingState> = engine.processingState
+  private val _processingState = MutableStateFlow<ProcessingState>(ProcessingState.Idle)
+  val processingState: StateFlow<ProcessingState> = _processingState.asStateFlow()
 
-  private val _previewSegment = MutableStateFlow<VideoSegment?>(null)
-  val previewSegment: StateFlow<VideoSegment?> = _previewSegment.asStateFlow()
+  private val _showSuccessDialog = MutableStateFlow<Boolean>(false)
+  val showSuccessDialog: StateFlow<Boolean> = _showSuccessDialog.asStateFlow()
 
-  private val _linkedAccount = MutableStateFlow<LinkedWhatsAppAccount>(loadLinkedAccount())
-  val linkedAccount: StateFlow<LinkedWhatsAppAccount> = _linkedAccount.asStateFlow()
-
-  private val _showLinkDialog = MutableStateFlow<Boolean>(false)
-  val showLinkDialog: StateFlow<Boolean> = _showLinkDialog.asStateFlow()
+  private val _successMessage = MutableStateFlow<String>("")
+  val successMessage: StateFlow<String> = _successMessage.asStateFlow()
 
   init {
-    if (!_linkedAccount.value.isLinked) {
-      _showLinkDialog.value = true
+    viewModelScope.launch {
+      engine.processingState.collect { state ->
+        // Forward engine states during compression
+        if (_processingState.value is ProcessingState.Preparing ||
+            _processingState.value is ProcessingState.Compressing ||
+            _processingState.value is ProcessingState.Idle
+        ) {
+          if (state is ProcessingState.Compressing ||
+              state is ProcessingState.Preparing ||
+              state is ProcessingState.Error ||
+              state is ProcessingState.Cancelled
+          ) {
+            _processingState.value = state
+          }
+        }
+      }
     }
-  }
-
-  private fun loadLinkedAccount(): LinkedWhatsAppAccount {
-    val isLinked = prefs.getBoolean("wa_is_linked", false)
-    val raw = prefs.getString("wa_raw_phone", "") ?: ""
-    val norm = prefs.getString("wa_norm_phone", "") ?: ""
-    val label = prefs.getString("wa_device_label", "Perangkat Tertaut (WhatsApp Web)") ?: "Perangkat Tertaut"
-    val time = prefs.getLong("wa_linked_at", 0L)
-    val method = prefs.getString("wa_method", "PAIRING_CODE") ?: "PAIRING_CODE"
-    val code = prefs.getString("wa_code", "") ?: ""
-    val sessionId = prefs.getString("wa_session_id", "") ?: ""
-    return LinkedWhatsAppAccount(
-      rawPhoneNumber = raw,
-      normalizedPhoneNumber = norm,
-      isLinked = isLinked,
-      linkedAtTimestamp = time,
-      deviceLabel = label,
-      connectionMethod = method,
-      activePairingCode = code,
-      pairingSessionId = sessionId
-    )
-  }
-
-  fun openLinkDialog() {
-    _showLinkDialog.value = true
-  }
-
-  fun closeLinkDialog() {
-    _showLinkDialog.value = false
-  }
-
-  fun markCompanionLinked(label: String = "Perangkat Tertaut (QR Scan)", method: String = "QR_SCAN") {
-    val now = System.currentTimeMillis()
-    prefs.edit()
-      .putBoolean("wa_is_linked", true)
-      .putString("wa_device_label", label)
-      .putString("wa_method", method)
-      .putLong("wa_linked_at", now)
-      .apply()
-
-    _linkedAccount.value = _linkedAccount.value.copy(
-      isLinked = true,
-      deviceLabel = label,
-      connectionMethod = method,
-      linkedAtTimestamp = now
-    )
-  }
-
-  fun confirmPairingCode(context: Context, rawNumber: String, code: String): Boolean {
-    val normalized = normalizePhoneNumber(rawNumber)
-    if (normalized.length < 9) {
-      Toast.makeText(context, "Nomor WhatsApp tidak valid (minimal 9 digit)", Toast.LENGTH_SHORT).show()
-      return false
-    }
-
-    val now = System.currentTimeMillis()
-    val displayLabel = "WA: +$normalized"
-    prefs.edit()
-      .putBoolean("wa_is_linked", true)
-      .putString("wa_raw_phone", rawNumber.trim())
-      .putString("wa_norm_phone", normalized)
-      .putString("wa_device_label", displayLabel)
-      .putString("wa_method", "PAIRING_CODE")
-      .putString("wa_code", code)
-      .putLong("wa_linked_at", now)
-      .apply()
-
-    _linkedAccount.value = LinkedWhatsAppAccount(
-      rawPhoneNumber = rawNumber.trim(),
-      normalizedPhoneNumber = normalized,
-      isLinked = true,
-      linkedAtTimestamp = now,
-      deviceLabel = displayLabel,
-      connectionMethod = "PAIRING_CODE",
-      activePairingCode = code
-    )
-    _showLinkDialog.value = false
-    Toast.makeText(context, "Nomor WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
-    return true
-  }
-
-  fun unlinkWhatsAppNumber(context: Context) {
-    prefs.edit()
-      .remove("wa_is_linked")
-      .remove("wa_raw_phone")
-      .remove("wa_norm_phone")
-      .remove("wa_device_label")
-      .remove("wa_method")
-      .remove("wa_code")
-      .remove("wa_session_id")
-      .remove("wa_linked_at")
-      .apply()
-
-    _linkedAccount.value = LinkedWhatsAppAccount()
-    Toast.makeText(context, "Tautan WhatsApp Dihapus", Toast.LENGTH_SHORT).show()
   }
 
   fun onVideoSelected(uri: Uri, context: Context) {
@@ -144,6 +62,8 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       val meta = VideoMetadataHelper.extractMetadata(context, uri)
       if (meta != null) {
         _selectedVideo.value = meta
+        _processingState.value = ProcessingState.Idle
+        _showSuccessDialog.value = false
         engine.resetToIdle()
       } else {
         Toast.makeText(context, "Video tidak dapat dimuat", Toast.LENGTH_SHORT).show()
@@ -151,15 +71,87 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
-  fun startOptimization(context: Context) {
+  /**
+   * Alur Otomatis Penuh:
+   * 1. Kompres/Encode secara lokal sesuai spek HD.
+   * 2. Upload setiap segmen hasil encode ke http://208.76.40.198:3000/api/send-hd (field: video).
+   * 3. Simpan file hasil encode ke Galeri HP (MediaStore).
+   * 4. Tampilkan dialog sukses "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status".
+   */
+  fun startFullAutomatedPipeline(context: Context) {
     val video = _selectedVideo.value ?: return
+
     viewModelScope.launch {
-      engine.optimizeVideo(sourceVideo = video)
+      try {
+        _processingState.value = ProcessingState.Preparing("Menyiapkan kualitas terbaik...")
+
+        // Langkah 1: Encode video lokal
+        val optResult: OptimizationResult? = engine.optimizeVideo(sourceVideo = video)
+        if (optResult == null || optResult.segments.isEmpty()) {
+          // Jika dibatalkan atau error, state sudah diset oleh engine
+          return@launch
+        }
+
+        val totalSegments = optResult.segments.size
+
+        // Langkah 2 & 3: Upload dan Simpan ke Galeri untuk setiap segmen
+        for ((index, segment) in optResult.segments.withIndex()) {
+          val currentPart = index + 1
+
+          // 2. Upload hasil encode ke server
+          _processingState.value = ProcessingState.Uploading(
+            activeChunk = currentPart,
+            totalChunks = totalSegments,
+            statusText = if (totalSegments > 1) {
+              "Mengunggah bagian $currentPart dari $totalSegments..."
+            } else {
+              "Mengunggah video..."
+            }
+          )
+
+          val uploadResult = ApiUploader.uploadVideo(segment.file)
+          if (uploadResult.isFailure) {
+            val errorMsg = uploadResult.exceptionOrNull()?.localizedMessage ?: "Gagal mengunggah video ke server"
+            _processingState.value = ProcessingState.Error("Gagal upload: $errorMsg")
+            return@launch
+          }
+
+          // 3. Simpan file hasil encode ke Galeri HP (MediaStore)
+          _processingState.value = ProcessingState.Saving(
+            statusText = if (totalSegments > 1) {
+              "Menyimpan bagian $currentPart ke Galeri..."
+            } else {
+              "Menyimpan ke Galeri..."
+            }
+          )
+
+          val saved = ExportHelper.saveToGallery(context, segment.file)
+          if (!saved) {
+            _processingState.value = ProcessingState.Error("Gagal menyimpan video ke Galeri.")
+            return@launch
+          }
+        }
+
+        // Langkah 4: Tampilkan pesan sukses
+        val msg = "Video HD berhasil disimpan ke Galeri! Silakan buka WhatsApp dan posting ke Status."
+        _successMessage.value = msg
+        _processingState.value = ProcessingState.Success(optResult, msg)
+        _showSuccessDialog.value = true
+
+      } catch (e: Exception) {
+        if (e is CancellationException) {
+          _processingState.value = ProcessingState.Cancelled
+        } else {
+          e.printStackTrace()
+          _processingState.value = ProcessingState.Error("Terjadi kesalahan: ${e.localizedMessage}")
+        }
+      }
     }
   }
 
   fun cancelOptimization() {
     engine.cancel()
+    _processingState.value = ProcessingState.Cancelled
   }
 
   fun resetOptimization() {
@@ -168,91 +160,18 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun resetAll() {
     _selectedVideo.value = null
-    _previewSegment.value = null
+    _showSuccessDialog.value = false
+    _successMessage.value = ""
+    _processingState.value = ProcessingState.Idle
     engine.resetToIdle()
   }
 
-  fun saveSegment(context: Context, segment: VideoSegment) {
-    viewModelScope.launch {
-      val success = ExportHelper.saveToGallery(context, segment.file)
-      if (success) {
-        Toast.makeText(context, "Disimpan ke Galeri (Movies/StatusHD)", Toast.LENGTH_SHORT).show()
-        resetAll()
-      } else {
-        Toast.makeText(context, "Gagal menyimpan ke galeri", Toast.LENGTH_SHORT).show()
-      }
-    }
+  fun dismissSuccessDialog() {
+    _showSuccessDialog.value = false
+    resetAll()
   }
 
-  fun saveAllSegments(context: Context, segments: List<VideoSegment>) {
-    viewModelScope.launch {
-      var savedCount = 0
-      for (seg in segments) {
-        if (ExportHelper.saveToGallery(context, seg.file)) {
-          savedCount++
-        }
-      }
-      if (savedCount > 0) {
-        Toast.makeText(context, "Berhasil menyimpan $savedCount bagian ke Galeri", Toast.LENGTH_SHORT).show()
-        resetAll()
-      } else {
-        Toast.makeText(context, "Gagal menyimpan ke galeri", Toast.LENGTH_SHORT).show()
-      }
-    }
-  }
-
-  val directSendState: StateFlow<com.example.service.DirectSendState> =
-    com.example.service.WhatsAppCompanionService.sendState
-
-  /**
-   * Mengirimkan video langsung ke nomor WhatsApp sendiri ("Message Yourself").
-   * Melalui nomor sendiri, video sampai secara instan tanpa re-kompresi galeri,
-   * dan dapat langsung di-forward ke Status WhatsApp.
-   */
-  fun sendToSelfChat(context: Context, segment: VideoSegment) {
-    val account = _linkedAccount.value
-    val targetPhone = account.normalizedPhoneNumber.ifBlank { account.rawPhoneNumber }
-
-    // Simpan juga ke galeri otomatis agar aman
-    viewModelScope.launch {
-      ExportHelper.saveToGallery(context, segment.file)
-    }
-
-    val sent = ExportHelper.sendToSelfOnWhatsApp(context, segment.file, targetPhone)
-    if (!sent) {
-      Toast.makeText(context, "Gagal membuka WhatsApp. Pastikan WhatsApp terpasang.", Toast.LENGTH_SHORT).show()
-    }
-  }
-
-  fun sendAllToSelfChat(context: Context, segments: List<VideoSegment>) {
-    val account = _linkedAccount.value
-    val targetPhone = account.normalizedPhoneNumber.ifBlank { account.rawPhoneNumber }
-
-    viewModelScope.launch {
-      for (seg in segments) {
-        ExportHelper.saveToGallery(context, seg.file)
-      }
-    }
-
-    val sent = ExportHelper.sendAllToSelfOnWhatsApp(context, segments.map { it.file }, targetPhone)
-    if (!sent) {
-      Toast.makeText(context, "Gagal membuka WhatsApp. Pastikan WhatsApp terpasang.", Toast.LENGTH_SHORT).show()
-    }
-  }
-
-  fun sendDirectToServer(context: Context, segment: VideoSegment) {
-    sendToSelfChat(context, segment)
-  }
-
-  fun sendAllDirectToServer(context: Context, segments: List<VideoSegment>) {
-    sendAllToSelfChat(context, segments)
-  }
-
-  fun resetDirectSendState() {
-    com.example.service.WhatsAppCompanionService.resetState()
-  }
-
-  fun setPreviewSegment(segment: VideoSegment?) {
-    _previewSegment.value = segment
+  fun openWhatsApp(context: Context) {
+    ExportHelper.openWhatsApp(context)
   }
 }
