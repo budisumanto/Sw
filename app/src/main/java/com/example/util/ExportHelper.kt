@@ -2,6 +2,7 @@ package com.example.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -67,6 +68,38 @@ object ExportHelper {
         resolver.delete(itemUri, null, null)
       } catch (_: Exception) {}
       false
+    }
+  }
+
+  /**
+   * Share video as an uncompressed stream or document directly to WhatsApp
+   * to guarantee maximum fidelity without gallery compression.
+   */
+  fun shareDirectToWhatsApp(context: Context, file: File, asDocument: Boolean = false): Boolean {
+    return try {
+      val uri = getContentUri(context, file)
+      val intent = Intent(Intent.ACTION_SEND).apply {
+        type = if (asDocument) "application/octet-stream" else "video/mp4"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, "StatusHD Optimized Video")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        setPackage("com.whatsapp")
+      }
+      context.startActivity(Intent.createChooser(intent, "Kirim via WhatsApp"))
+      true
+    } catch (_: Exception) {
+      try {
+        val uri = getContentUri(context, file)
+        val genericIntent = Intent(Intent.ACTION_SEND).apply {
+          type = "video/mp4"
+          putExtra(Intent.EXTRA_STREAM, uri)
+          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(genericIntent, "Bagikan Video HD"))
+        true
+      } catch (_: Exception) {
+        false
+      }
     }
   }
 }
