@@ -16,9 +16,10 @@ object ApiUploader {
     const val HEADER_API_KEY = "x-api-key"
     const val API_KEY_VALUE = "IPUL_GANTENG_123"
 
+    // Set timeout koneksi, write, dan read ke 60 detik untuk upload file video
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(120, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
