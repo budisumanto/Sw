@@ -12,7 +12,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object ApiUploader {
-    const val UPLOAD_URL = "http://208.76.40.198:3000/api/send-hd"
+    const val UPLOAD_URL = "https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd"
     const val HEADER_API_KEY = "x-api-key"
     const val API_KEY_VALUE = "IPUL_GANTENG_123"
 
@@ -44,7 +44,7 @@ object ApiUploader {
     }
 
     /**
-     * Uploads the encoded video file to http://208.76.40.198:3000/api/send-hd as multipart/form-data.
+     * Uploads the encoded video file to https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd as multipart/form-data.
      * Field name: "video".
      * Menyertakan HTTP Header 'x-api-key: IPUL_GANTENG_123' agar server tidak menolak dengan 403 Forbidden.
      */

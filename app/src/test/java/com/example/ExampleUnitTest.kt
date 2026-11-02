@@ -189,7 +189,7 @@ class ExampleUnitTest {
 
     val request = ApiUploader.buildUploadRequest(dummyFile)
 
-    assertEquals("http://208.76.40.198:3000/api/send-hd", request.url.toString())
+    assertEquals("https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd", request.url.toString())
     assertEquals("IPUL_GANTENG_123", request.header("x-api-key"))
   }
 }
