@@ -39,7 +39,6 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   val showLinkDialog: StateFlow<Boolean> = _showLinkDialog.asStateFlow()
 
   init {
-    // Show link dialog on initial startup if user hasn't connected WhatsApp yet
     if (!_linkedAccount.value.isLinked) {
       _showLinkDialog.value = true
     }
@@ -91,19 +90,6 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     )
   }
 
-  fun generatePairingCodeForPhone(rawNumber: String): String {
-    val code = com.example.model.generateRandomPairingCode()
-    val norm = normalizePhoneNumber(rawNumber)
-    val sessionId = "WA-" + System.currentTimeMillis().toString().takeLast(6)
-    _linkedAccount.value = _linkedAccount.value.copy(
-      rawPhoneNumber = rawNumber,
-      normalizedPhoneNumber = norm,
-      activePairingCode = code,
-      pairingSessionId = sessionId
-    )
-    return code
-  }
-
   fun confirmPairingCode(context: Context, rawNumber: String, code: String): Boolean {
     val normalized = normalizePhoneNumber(rawNumber)
     if (normalized.length < 9) {
@@ -112,7 +98,7 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     val now = System.currentTimeMillis()
-    val displayLabel = "WA: +$normalized (Kode $code)"
+    val displayLabel = "WA: +$normalized"
     prefs.edit()
       .putBoolean("wa_is_linked", true)
       .putString("wa_raw_phone", rawNumber.trim())
@@ -133,13 +119,8 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
       activePairingCode = code
     )
     _showLinkDialog.value = false
-    Toast.makeText(context, "WhatsApp Berhasil Ditautkan via Kode Pairing!", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, "Nomor WhatsApp Berhasil Ditautkan!", Toast.LENGTH_SHORT).show()
     return true
-  }
-
-  fun linkWhatsAppNumber(context: Context, rawNumber: String): Boolean {
-    val code = com.example.model.generateRandomPairingCode()
-    return confirmPairingCode(context, rawNumber, code)
   }
 
   fun unlinkWhatsAppNumber(context: Context) {
@@ -223,28 +204,48 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
   val directSendState: StateFlow<com.example.service.DirectSendState> =
     com.example.service.WhatsAppCompanionService.sendState
 
-  fun sendDirectToServer(context: Context, segment: VideoSegment) {
+  /**
+   * Mengirimkan video langsung ke nomor WhatsApp sendiri ("Message Yourself").
+   * Melalui nomor sendiri, video sampai secara instan tanpa re-kompresi galeri,
+   * dan dapat langsung di-forward ke Status WhatsApp.
+   */
+  fun sendToSelfChat(context: Context, segment: VideoSegment) {
     val account = _linkedAccount.value
-    if (!account.isLinked) {
-      _showLinkDialog.value = true
-      Toast.makeText(context, "Tautkan WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
-      return
+    val targetPhone = account.normalizedPhoneNumber.ifBlank { account.rawPhoneNumber }
+
+    // Simpan juga ke galeri otomatis agar aman
+    viewModelScope.launch {
+      ExportHelper.saveToGallery(context, segment.file)
     }
-    com.example.service.WhatsAppCompanionService.sendDirectly(context, segment, account.normalizedPhoneNumber)
+
+    val sent = ExportHelper.sendToSelfOnWhatsApp(context, segment.file, targetPhone)
+    if (!sent) {
+      Toast.makeText(context, "Gagal membuka WhatsApp. Pastikan WhatsApp terpasang.", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  fun sendAllToSelfChat(context: Context, segments: List<VideoSegment>) {
+    val account = _linkedAccount.value
+    val targetPhone = account.normalizedPhoneNumber.ifBlank { account.rawPhoneNumber }
+
+    viewModelScope.launch {
+      for (seg in segments) {
+        ExportHelper.saveToGallery(context, seg.file)
+      }
+    }
+
+    val sent = ExportHelper.sendAllToSelfOnWhatsApp(context, segments.map { it.file }, targetPhone)
+    if (!sent) {
+      Toast.makeText(context, "Gagal membuka WhatsApp. Pastikan WhatsApp terpasang.", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  fun sendDirectToServer(context: Context, segment: VideoSegment) {
+    sendToSelfChat(context, segment)
   }
 
   fun sendAllDirectToServer(context: Context, segments: List<VideoSegment>) {
-    val account = _linkedAccount.value
-    if (!account.isLinked) {
-      _showLinkDialog.value = true
-      Toast.makeText(context, "Tautkan WhatsApp Anda terlebih dahulu", Toast.LENGTH_SHORT).show()
-      return
-    }
-    viewModelScope.launch {
-      for (seg in segments) {
-        com.example.service.WhatsAppCompanionService.sendDirectly(context, seg, account.normalizedPhoneNumber)
-      }
-    }
+    sendAllToSelfChat(context, segments)
   }
 
   fun resetDirectSendState() {

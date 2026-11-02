@@ -94,6 +94,11 @@ fun LinkWhatsAppDialog(
   val context = LocalContext.current
   val clipboardManager = LocalClipboardManager.current
 
+  // Eagerly instantiate WebView so it runs session timers across all tabs
+  LaunchedEffect(Unit) {
+    WhatsAppWebManager.getOrCreateWebView(context)
+  }
+
   var selectedTab by remember {
     mutableIntStateOf(if (linkedAccount.isLinked && linkedAccount.connectionMethod == "PAIRING_CODE") 1 else 0)
   }
@@ -366,7 +371,7 @@ fun LinkWhatsAppDialog(
         }
 
         // =========================================================
-        // TAB 0: RESMI WHATSAPP WEB QR CODE ENGINE
+        // TAB 0: RESMI WHATSAPP WEB QR CODE ENGINE (AUTO-CENTERED)
         // =========================================================
         if (selectedTab == 0) {
           Box(
@@ -401,11 +406,11 @@ fun LinkWhatsAppDialog(
 
           Spacer(modifier = Modifier.height(12.dp))
 
-          // Authentic WhatsApp Web WebView Viewport
+          // Authentic WhatsApp Web WebView Viewport (Auto-Centered & Zoomed)
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .height(260.dp)
+              .height(280.dp)
               .clip(RoundedCornerShape(20.dp))
               .background(Color(0xFF06090E))
               .border(BorderStroke(1.5.dp, ElectricMint.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
@@ -421,11 +426,6 @@ fun LinkWhatsAppDialog(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                   )
-                }
-              },
-              update = { view ->
-                (view.parent as? ViewGroup)?.let {
-                  // Already safely attached to this container
                 }
               }
             )
@@ -526,7 +526,7 @@ fun LinkWhatsAppDialog(
                 color = ElectricMint
               )
               Text(
-                text = "Masukkan nomor Anda. Sistem akan meminta 8 digit kode pairing resmi langsung dari server WhatsApp.",
+                text = "Masukkan nomor WhatsApp Anda. Kode resmi 8-digit akan langsung diminta ke server WhatsApp.",
                 fontSize = 11.sp,
                 color = IOSTextSecondary,
                 lineHeight = 15.sp
@@ -568,7 +568,7 @@ fun LinkWhatsAppDialog(
                 val clean = normalizePhoneNumber(phoneInput)
                 if (clean.length >= 9) {
                   isRequestingPairingCode = true
-                  WhatsAppWebManager.triggerPairWithPhone(clean)
+                  WhatsAppWebManager.triggerPairWithPhone(context, clean)
                 }
               }
             ),
@@ -602,7 +602,7 @@ fun LinkWhatsAppDialog(
               .clickable(enabled = isValidPhone && !isRequestingPairingCode) {
                 val clean = normalizePhoneNumber(phoneInput)
                 isRequestingPairingCode = true
-                WhatsAppWebManager.triggerPairWithPhone(clean)
+                WhatsAppWebManager.triggerPairWithPhone(context, clean)
                 Toast.makeText(context, "Meminta kode pairing resmi dari WhatsApp...", Toast.LENGTH_SHORT).show()
               }
               .testTag("generate_pairing_code_button"),
@@ -640,8 +640,33 @@ fun LinkWhatsAppDialog(
             }
           }
 
+          // Active WhatsApp Web viewport in Tab 1 for direct visibility of official pairing prompt
+          Spacer(modifier = Modifier.height(10.dp))
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(160.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .background(Color(0xFF06090E))
+              .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)), RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+          ) {
+            AndroidView(
+              modifier = Modifier.fillMaxSize(),
+              factory = { ctx ->
+                WhatsAppWebManager.getOrCreateWebView(ctx).apply {
+                  (parent as? ViewGroup)?.removeView(this)
+                  layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                  )
+                }
+              }
+            )
+          }
+
           // Instructions for entering code into WhatsApp
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(10.dp))
           Box(
             modifier = Modifier
               .fillMaxWidth()
@@ -688,7 +713,7 @@ fun LinkWhatsAppDialog(
             Column(
               modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
+                .padding(top = 10.dp),
               horizontalAlignment = Alignment.CenterHorizontally
             ) {
               Text(
@@ -761,7 +786,7 @@ fun LinkWhatsAppDialog(
             }
           }
 
-          Spacer(modifier = Modifier.height(14.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
           // Tombol Selesai / Konfirmasi
           Box(
@@ -771,7 +796,8 @@ fun LinkWhatsAppDialog(
               .clip(RoundedCornerShape(14.dp))
               .background(Brush.horizontalGradient(listOf(ElectricMint, ElectricMintDark)))
               .clickable {
-                onLinkWithPairingCode(phoneInput, activeCode.ifBlank { "WHATSAPP-WEB" })
+                val clean = normalizePhoneNumber(phoneInput)
+                onLinkWithPairingCode(clean, activeCode.ifBlank { "WHATSAPP-CONNECTED" })
                 onDismiss()
               }
               .testTag("confirm_pairing_code_button"),

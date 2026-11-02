@@ -72,30 +72,76 @@ object ExportHelper {
   }
 
   /**
-   * Share video as an uncompressed stream or document directly to WhatsApp
-   * to guarantee maximum fidelity without gallery compression.
+   * Kirim video langsung ke nomor WhatsApp sendiri ("Message Yourself").
+   * Melalui chat dengan nomor sendiri, video terkirim dalam kualitas tinggi dan bisa langsung
+   * di-forward ke Status WhatsApp tanpa kompresi ulang WhatsApp.
    */
-  fun shareDirectToWhatsApp(context: Context, file: File, asDocument: Boolean = false): Boolean {
-    return try {
-      val uri = getContentUri(context, file)
+  fun sendToSelfOnWhatsApp(context: Context, file: File, rawPhoneNumber: String): Boolean {
+    if (!file.exists()) return false
+    val uri = getContentUri(context, file)
+    val cleanPhone = com.example.model.normalizePhoneNumber(rawPhoneNumber)
+
+    try {
+      // Buka chat langsung ke nomor sendiri dengan video terlampir
       val intent = Intent(Intent.ACTION_SEND).apply {
-        type = if (asDocument) "application/octet-stream" else "video/mp4"
+        type = "video/mp4"
         putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, "StatusHD Optimized Video")
+        if (cleanPhone.isNotBlank()) {
+          putExtra("jid", "$cleanPhone@s.whatsapp.net")
+        }
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         setPackage("com.whatsapp")
       }
-      context.startActivity(Intent.createChooser(intent, "Kirim via WhatsApp"))
-      true
+      context.startActivity(intent)
+      return true
     } catch (_: Exception) {
-      try {
-        val uri = getContentUri(context, file)
-        val genericIntent = Intent(Intent.ACTION_SEND).apply {
+      // Fallback jika com.whatsapp tidak ditemukan atau melempar ActivityNotFound
+      return try {
+        val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
           type = "video/mp4"
           putExtra(Intent.EXTRA_STREAM, uri)
           addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(Intent.createChooser(genericIntent, "Bagikan Video HD"))
+        context.startActivity(Intent.createChooser(fallbackIntent, "Kirim Video ke WhatsApp"))
+        true
+      } catch (_: Exception) {
+        false
+      }
+    }
+  }
+
+  /**
+   * Kirim beberapa segmen sekaligus ke WhatsApp nomor sendiri
+   */
+  fun sendAllToSelfOnWhatsApp(context: Context, files: List<File>, rawPhoneNumber: String): Boolean {
+    if (files.isEmpty()) return false
+    val uris = ArrayList(files.map { getContentUri(context, it) })
+    val cleanPhone = com.example.model.normalizePhoneNumber(rawPhoneNumber)
+
+    try {
+      val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "video/mp4"
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        if (cleanPhone.isNotBlank()) {
+          putExtra("jid", "$cleanPhone@s.whatsapp.net")
+        }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        setPackage("com.whatsapp")
+      }
+      context.startActivity(intent)
+      return true
+    } catch (_: Exception) {
+      return try {
+        val fallbackIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+          type = "video/mp4"
+          putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(Intent.createChooser(fallbackIntent, "Kirim Semua ke WhatsApp"))
         true
       } catch (_: Exception) {
         false

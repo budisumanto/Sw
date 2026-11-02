@@ -28,7 +28,7 @@ sealed interface WhatsAppWebAuthStatus {
 }
 
 /**
- * Singleton manager to control headless/embedded WhatsApp Web (`https://web.whatsapp.com`).
+ * Singleton manager to control embedded WhatsApp Web (`https://web.whatsapp.com`).
  * Uses Chrome Desktop User-Agent so WhatsApp serves the genuine pairing interface (both QR code and 8-character phone pairing code).
  */
 @SuppressLint("StaticFieldLeak")
@@ -37,7 +37,6 @@ object WhatsAppWebManager {
   private const val TAG = "WhatsAppWebManager"
   const val WA_WEB_URL = "https://web.whatsapp.com"
 
-  // Standard Chrome on Windows Desktop User-Agent to ensure WhatsApp Web desktop interface is served
   const val DESKTOP_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
@@ -59,7 +58,6 @@ object WhatsAppWebManager {
   @SuppressLint("SetJavaScriptEnabled")
   fun getOrCreateWebView(context: Context): WebView {
     activeWebView?.let { view ->
-      // Ensure the WebView is safely detached from any previous parent before reuse
       (view.parent as? ViewGroup)?.removeView(view)
       return view
     }
@@ -77,7 +75,6 @@ object WhatsAppWebManager {
         allowContentAccess = true
         displayZoomControls = false
         builtInZoomControls = false
-        setInitialScale(100)
       }
 
       val cookieManager = CookieManager.getInstance()
@@ -136,51 +133,69 @@ object WhatsAppWebManager {
     }
   }
 
-  fun triggerPairWithPhone(phoneNumber: String) {
+  /**
+   * Automates clicking "Link with phone number", filling in the phone number using
+   * React-compatible input property descriptors, and pressing next.
+   */
+  fun triggerPairWithPhone(context: Context, phoneNumber: String) {
+    val webView = getOrCreateWebView(context)
     mainHandler.post {
       val cleanPhone = phoneNumber.replace(Regex("[^0-9]"), "")
       val js = """
         (function() {
           try {
             // Find link with phone number button or enter phone
-            const links = Array.from(document.querySelectorAll('span, button, [role="button"]'));
+            const links = Array.from(document.querySelectorAll('span, button, [role="button"], a'));
             const linkWithPhoneBtn = links.find(el => {
               const text = (el.innerText || el.textContent || '').toLowerCase();
               return text.includes('tautkan dengan nomor') ||
                      text.includes('link with phone') ||
-                     text.includes('tautkan perangkat');
+                     text.includes('tautkan dengan nomor telepon');
             });
             if (linkWithPhoneBtn) {
               linkWithPhoneBtn.click();
             }
 
-            setTimeout(function() {
-              // Try finding phone input field
+            let checkCount = 0;
+            const timer = setInterval(function() {
+              checkCount++;
               const phoneInput = document.querySelector('input[type="tel"]') ||
                                  document.querySelector('input[type="text"]');
               if (phoneInput && '$cleanPhone'.length >= 8) {
+                clearInterval(timer);
                 phoneInput.focus();
-                phoneInput.value = '$cleanPhone';
+
+                // React-safe value setter
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                if (nativeInputValueSetter) {
+                  nativeInputValueSetter.call(phoneInput, '$cleanPhone');
+                } else {
+                  phoneInput.value = '$cleanPhone';
+                }
                 phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
                 phoneInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-                // Find next button
-                const nextBtns = Array.from(document.querySelectorAll('button, [role="button"]'));
-                const nextBtn = nextBtns.find(b => {
-                  const t = (b.innerText || b.textContent || '').toLowerCase();
-                  return t.includes('lanjut') || t.includes('next') || t.includes('berikutnya');
-                });
-                if (nextBtn) {
-                  nextBtn.click();
-                }
+                setTimeout(function() {
+                  const nextBtns = Array.from(document.querySelectorAll('button, [role="button"]'));
+                  const nextBtn = nextBtns.find(b => {
+                    const t = (b.innerText || b.textContent || '').toLowerCase();
+                    return t.includes('lanjut') || t.includes('next') || t.includes('berikutnya');
+                  });
+                  if (nextBtn) {
+                    nextBtn.click();
+                  }
+                }, 500);
               }
-            }, 800);
+              if (checkCount > 20) {
+                clearInterval(timer);
+              }
+            }, 300);
           } catch(e) {
             console.error('StatusHDNative error: ' + e);
           }
         })();
       """.trimIndent()
-      activeWebView?.evaluateJavascript(js, null)
+      webView.evaluateJavascript(js, null)
     }
   }
 
@@ -189,9 +204,14 @@ object WhatsAppWebManager {
       (function() {
         try {
           const style = document.createElement('style');
+          style.id = 'status-hd-theme-style';
           style.innerHTML = `
-            body {
+            html, body {
               background-color: #06090E !important;
+              width: 100% !important;
+              height: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
             }
             #app {
               background: transparent !important;
@@ -218,7 +238,7 @@ object WhatsAppWebManager {
 
         setInterval(function() {
           try {
-            // Check if user is authenticated (main chat pane exists)
+            // 1. Check if user is authenticated (main chat pane exists)
             const chatList = document.querySelector('#pane-side') ||
                              document.querySelector('[data-testid="chat-list"]') ||
                              document.querySelector('[aria-label="Chat list"]') ||
@@ -231,8 +251,8 @@ object WhatsAppWebManager {
               return;
             }
 
-            // Check if 8-character pairing code is rendered on screen
-            const codeElements = Array.from(document.querySelectorAll('span, div'))
+            // 2. Check for single container pairing code (e.g. "ABCD-1234" or "ABCD1234")
+            const codeElements = Array.from(document.querySelectorAll('span, div, [data-testid]'))
               .filter(el => {
                 const text = (el.innerText || el.textContent || '').trim();
                 return /^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(text) || /^[A-Z0-9]{8}$/.test(text);
@@ -243,9 +263,31 @@ object WhatsAppWebManager {
               if (window.StatusHDNative && window.StatusHDNative.onPairingCodeDetected) {
                 window.StatusHDNative.onPairingCodeDetected(codeText);
               }
+              return;
+            }
+
+            // 3. Check for WhatsApp Web split character boxes (8 separate span/div elements)
+            const singleChars = Array.from(document.querySelectorAll('span, div'))
+              .filter(el => {
+                const text = (el.innerText || el.textContent || '').trim();
+                return text.length === 1 && /^[A-Z0-9]$/.test(text);
+              });
+
+            if (singleChars.length >= 8) {
+              // Extract contiguous 8 alphanumeric characters
+              for (let i = 0; i <= singleChars.length - 8; i++) {
+                const candidate = singleChars.slice(i, i + 8).map(el => (el.innerText || el.textContent).trim()).join('');
+                if (/^[A-Z0-9]{8}$/.test(candidate)) {
+                  const formatted = candidate.substring(0, 4) + '-' + candidate.substring(4, 8);
+                  if (window.StatusHDNative && window.StatusHDNative.onPairingCodeDetected) {
+                    window.StatusHDNative.onPairingCodeDetected(formatted);
+                  }
+                  break;
+                }
+              }
             }
           } catch(e) {}
-        }, 1200);
+        }, 800);
       })();
     """.trimIndent()
     view?.evaluateJavascript(observerJs, null)
