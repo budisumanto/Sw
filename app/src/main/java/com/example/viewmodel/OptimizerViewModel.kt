@@ -16,8 +16,11 @@ import com.example.util.ExportHelper
 import com.example.util.VideoMetadataHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class OptimizerViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +30,11 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   private val _phoneNumber = MutableStateFlow<String>(prefs.getString("user_phone_number", "") ?: "")
   val phoneNumber: StateFlow<String> = _phoneNumber.asStateFlow()
+
+  val isPhoneNumberValid: StateFlow<Boolean> = _phoneNumber.map { input ->
+    val clean = normalizeWhatsAppPhoneNumber(input)
+    clean.length in 10..15
+  }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
   private val _selectedVideo = MutableStateFlow<VideoMetadata?>(null)
   val selectedVideo: StateFlow<VideoMetadata?> = _selectedVideo.asStateFlow()
@@ -80,20 +88,24 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * Alur Baru:
-   * 1. Validasi nomor WhatsApp (format '62...').
+   * 1. Validasi nomor WhatsApp (Wajib diisi & format '62...').
    * 2. Kompres/Encode video secara lokal sesuai standar HD WhatsApp.
    * 3. Upload hasil encode ke server (field: phone & video) dengan header x-api-key: IPUL_GANTENG_123.
    * 4. Jika server merespons status: true, tampilkan pop-up:
    *    "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status."
    * 5. Jika gagal, tampilkan pesan error yang jelas.
-   * (Fitur simpan otomatis ke Galeri telah dihapus).
    */
   fun startFullAutomatedPipeline(context: Context) {
     val rawPhone = _phoneNumber.value.trim()
-    val cleanPhone = normalizeWhatsAppPhoneNumber(rawPhone)
+    if (rawPhone.isBlank()) {
+      _processingState.value = ProcessingState.Error("Nomor WhatsApp wajib diisi.")
+      Toast.makeText(context, "Nomor WhatsApp wajib diisi", Toast.LENGTH_SHORT).show()
+      return
+    }
 
+    val cleanPhone = normalizeWhatsAppPhoneNumber(rawPhone)
     if (cleanPhone.length < 10) {
-      _processingState.value = ProcessingState.Error("Silakan masukkan Nomor WhatsApp Anda dengan benar.")
+      _processingState.value = ProcessingState.Error("Silakan masukkan Nomor WhatsApp Anda dengan benar (minimal 10 digit).")
       Toast.makeText(context, "Nomor WhatsApp tidak valid", Toast.LENGTH_SHORT).show()
       return
     }
