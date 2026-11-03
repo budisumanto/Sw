@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">StatusHD</string>
+    <string name="tagline">Kualitas Jernih untuk Status WA</string>
+    <string name="target_phone_number">Nomor WhatsApp Tujuan</string>
+    <string name="target_phone_subtitle">Tujuan pengiriman video HD</string>
+    <string name="target_phone_not_set">Nomor belum diisi</string>
+    <string name="target_phone_mandatory">WAJIB DIISI</string>
+    <string name="target_phone_tap_to_fill">Sentuh untuk mengisi nomor WhatsApp...</string>
+    <string name="target_phone_edit">Ubah</string>
+    <string name="target_phone_fill">Isi</string>
+    <string name="target_phone_note">Jika video tidak masuk ke chat WhatsApp Anda, mohon periksa kembali apakah nomor sudah ditulis dengan benar.</string>
+
+    <string name="pick_video_title">Pilih Video untuk Dioptimalkan</string>
+    <string name="pick_video_desc">Video akan diproses agar tetap jernih dan tajam saat diunggah ke status WhatsApp kamu.</string>
+    <string name="pick_video_btn">Buka Galeri Video</string>
+    <string name="change_video_btn">Ganti Video</string>
+    <string name="auto_split_note">Dibagi %1$d bagian otomatis (per 90s)</string>
+
+    <string name="btn_optimize">Kirim ke Status WhatsApp</string>
+    <string name="processing_preparing">Menyiapkan kualitas terbaik...</string>
+    <string name="processing_chunk">Memproses bagian %1$d dari %2$d...</string>
+    <string name="processing_single">Memproses Video...</string>
+    <string name="processing_subtitle">Menyesuaikan kejernihan video</string>
+    <string name="important_warning">Penting: Jangan mengedit, memotong ulang, atau menambah musik pada video yang diterima di WhatsApp Anda, karena sistem WhatsApp akan otomatis mengompresi ulang dan menurunkan kualitasnya.</string>
+    <string name="btn_cancel">Batalkan</string>
+    <string name="uploading_chunk">Mengirim bagian %1$d dari %2$d...</string>
+    <string name="uploading_single">Mengirim ke WhatsApp...</string>
+    <string name="cancelled_msg">Proses dibatalkan</string>
+    <string name="btn_retry">Coba Lagi</string>
+    <string name="btn_repeat">Ulangi</string>
+
+    <string name="dialog_phone_title">Nomor WhatsApp</string>
+    <string name="dialog_phone_desc">Video hasil proses akan otomatis dikirimkan ke chat WhatsApp nomor ini.</string>
+    <string name="dialog_phone_error">Nomor WhatsApp belum lengkap (minimal 10 digit).</string>
+    <string name="dialog_phone_save">Simpan &amp; Lanjutkan</string>
+
+    <string name="dialog_success_title">Berhasil Dikirim!</string>
+    <string name="dialog_success_desc">Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status.</string>
+    <string name="dialog_success_open_wa">Buka WhatsApp</string>
+    <string name="dialog_close">Tutup</string>
+</resources>

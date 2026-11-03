@@ -212,7 +212,7 @@ class ExampleUnitTest {
 
     val request = ApiUploader.buildUploadRequest("6281234567890", dummyFile)
 
-    assertEquals("https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd", request.url.toString())
+    assertEquals("https://statushd.moav.site/api/send-hd", request.url.toString())
     assertEquals("IPUL_GANTENG_123", request.header("x-api-key"))
 
     val body = request.body as? MultipartBody

@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.model.VideoMetadata
 import com.example.ui.theme.LocalGlass
 import com.example.ui.theme.pressable
@@ -102,7 +104,7 @@ fun VideoSelectorCard(
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-          text = "Pilih Video untuk Dioptimalkan",
+          text = stringResource(id = R.string.pick_video_title),
           style = MaterialTheme.typography.titleMedium,
           color = g.text,
           textAlign = TextAlign.Center
@@ -111,7 +113,7 @@ fun VideoSelectorCard(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-          text = "Video akan diproses agar tetap jernih dan tajam saat diunggah ke status WhatsApp kamu.",
+          text = stringResource(id = R.string.pick_video_desc),
           style = MaterialTheme.typography.bodyMedium,
           color = g.textMuted,
           textAlign = TextAlign.Center,
@@ -122,7 +124,7 @@ fun VideoSelectorCard(
 
         // Tombol Elegan Pilih Video
         GlassButton(
-          text = "Buka Galeri Video",
+          text = stringResource(id = R.string.pick_video_btn),
           onClick = openGallery,
           primary = true,
           modifier = Modifier
@@ -236,7 +238,7 @@ fun VideoSelectorCard(
             if (selectedVideo.needsSplitting) {
               Spacer(modifier = Modifier.height(8.dp))
               Text(
-                text = "Dibagi ${selectedVideo.estimatedChunkCount} bagian otomatis (per 90s)",
+                text = stringResource(id = R.string.auto_split_note, selectedVideo.estimatedChunkCount),
                 fontSize = 11.sp,
                 color = Color(0xFFFDE68A)
               )
@@ -254,11 +256,7 @@ fun VideoSelectorCard(
               .clip(RoundedCornerShape(999.dp))
               .background(g.fillStrong, RoundedCornerShape(999.dp))
               .border(1.dp, g.border, RoundedCornerShape(999.dp))
-              .pressable {
-                mediaPicker.launch(
-                  PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-                )
-              }
+              .pressable { openGallery() }
               .padding(horizontal = 16.dp, vertical = 8.dp)
               .testTag("change_video_button"),
             contentAlignment = Alignment.Center
@@ -272,7 +270,7 @@ fun VideoSelectorCard(
               )
               Spacer(modifier = Modifier.width(6.dp))
               Text(
-                text = "Ganti Video",
+                text = stringResource(id = R.string.change_video_btn),
                 style = MaterialTheme.typography.labelSmall,
                 color = g.text
               )

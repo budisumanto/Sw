@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.ui.theme.LocalGlass
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,7 +107,7 @@ fun SuccessDialog(
         verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
         Text(
-          text = "Berhasil Dikirim!",
+          text = stringResource(id = R.string.dialog_success_title),
           style = MaterialTheme.typography.titleLarge.copy(
             fontWeight = FontWeight.SemiBold
           ),
@@ -113,8 +115,9 @@ fun SuccessDialog(
           textAlign = TextAlign.Center
         )
 
+        val displayMsg = if (message.isNotBlank()) message else stringResource(id = R.string.dialog_success_desc)
         Text(
-          text = message,
+          text = displayMsg,
           style = MaterialTheme.typography.bodyMedium,
           color = Color(0xFF9CA3AF),
           textAlign = TextAlign.Center,
@@ -127,7 +130,7 @@ fun SuccessDialog(
 
       // Tombol Aksi Buka WhatsApp
       GlassButton(
-        text = "Buka WhatsApp",
+        text = stringResource(id = R.string.dialog_success_open_wa),
         onClick = {
           onOpenWhatsApp()
           onDismiss()
@@ -140,7 +143,7 @@ fun SuccessDialog(
 
       TextButton(onClick = onDismiss) {
         Text(
-          text = "Tutup",
+          text = stringResource(id = R.string.dialog_close),
           style = MaterialTheme.typography.labelMedium,
           color = Color(0xFF9CA3AF)
         )

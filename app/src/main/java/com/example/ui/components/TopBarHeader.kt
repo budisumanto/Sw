@@ -55,12 +55,12 @@ fun TopBarHeader(
 
     Column {
       Text(
-        text = "StatusHD",
+        text = androidx.compose.ui.res.stringResource(id = R.string.app_name),
         style = MaterialTheme.typography.titleMedium,
         color = g.text
       )
       Text(
-        text = "Kualitas Jernih untuk Status WA",
+        text = androidx.compose.ui.res.stringResource(id = R.string.tagline),
         style = MaterialTheme.typography.bodyMedium,
         color = g.textMuted
       )

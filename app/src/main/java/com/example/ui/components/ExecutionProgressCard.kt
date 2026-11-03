@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.model.ProcessingState
 import com.example.ui.theme.LocalGlass
 import com.example.ui.theme.pressable
@@ -50,7 +52,7 @@ fun ExecutionProgressCard(
     is ProcessingState.Idle -> {
       if (hasVideoSelected) {
         GlassButton(
-          text = "Kirim ke Status WhatsApp",
+          text = stringResource(id = R.string.btn_optimize),
           onClick = onStartOptimize,
           primary = true,
           modifier = modifier
@@ -105,15 +107,15 @@ fun ExecutionProgressCard(
             Column {
               Text(
                 text = if (processingState.totalChunks > 1) {
-                  "Memproses bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+                  stringResource(id = R.string.processing_chunk, processingState.activeChunk, processingState.totalChunks)
                 } else {
-                  "Memproses Video..."
+                  stringResource(id = R.string.processing_single)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = g.text
               )
               Text(
-                text = "Menyesuaikan kejernihan video",
+                text = stringResource(id = R.string.processing_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = g.textMuted
               )
@@ -160,7 +162,7 @@ fun ExecutionProgressCard(
                   .padding(top = 1.dp)
               )
               Text(
-                text = "Penting: Jangan mengedit atau memotong ulang video yang diterima di WhatsApp Anda, karena sistem WhatsApp akan otomatis mengompresi ulang dan menurunkan kualitasnya.",
+                text = stringResource(id = R.string.important_warning),
                 style = MaterialTheme.typography.bodyMedium,
                 color = g.text
               )
@@ -183,7 +185,7 @@ fun ExecutionProgressCard(
               contentAlignment = Alignment.Center
             ) {
               Text(
-                text = "Batalkan",
+                text = stringResource(id = R.string.btn_cancel),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFFCA5A5)
               )
@@ -216,9 +218,9 @@ fun ExecutionProgressCard(
             Spacer(modifier = Modifier.width(14.dp))
             Text(
               text = if (processingState.totalChunks > 1) {
-                "Mengirim bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+                stringResource(id = R.string.uploading_chunk, processingState.activeChunk, processingState.totalChunks)
               } else {
-                "Mengirim ke WhatsApp..."
+                stringResource(id = R.string.uploading_single)
               },
               style = MaterialTheme.typography.titleMedium,
               color = g.text
@@ -261,7 +263,7 @@ fun ExecutionProgressCard(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-              text = "Proses dibatalkan",
+              text = stringResource(id = R.string.cancelled_msg),
               style = MaterialTheme.typography.bodyLarge,
               color = g.text
             )
@@ -279,7 +281,7 @@ fun ExecutionProgressCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(imageVector = Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(13.dp), tint = g.text)
               Spacer(modifier = Modifier.width(4.dp))
-              Text("Ulangi", style = MaterialTheme.typography.labelSmall, color = g.text)
+              Text(stringResource(id = R.string.btn_repeat), style = MaterialTheme.typography.labelSmall, color = g.text)
             }
           }
         }
@@ -313,7 +315,7 @@ fun ExecutionProgressCard(
             horizontalArrangement = Arrangement.End
           ) {
             GlassButton(
-              text = "Coba Lagi",
+              text = stringResource(id = R.string.btn_retry),
               onClick = onReset,
               primary = true
             )

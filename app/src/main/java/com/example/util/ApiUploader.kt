@@ -14,7 +14,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object ApiUploader {
-    const val UPLOAD_URL = "https://harbor-flux-disposition-tutorials.trycloudflare.com/api/send-hd"
+    const val UPLOAD_URL = "https://statushd.moav.site/api/send-hd"
     const val HEADER_API_KEY = "x-api-key"
     const val API_KEY_VALUE = "IPUL_GANTENG_123"
 

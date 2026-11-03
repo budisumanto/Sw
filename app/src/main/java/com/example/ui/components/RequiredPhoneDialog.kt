@@ -44,6 +44,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.model.normalizeWhatsAppPhoneNumber
 import com.example.ui.theme.LocalGlass
 import com.example.ui.util.PhoneNumberVisualTransformation
@@ -131,7 +133,7 @@ fun RequiredPhoneDialog(
         verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
         Text(
-          text = "Nomor WhatsApp",
+          text = stringResource(id = R.string.dialog_phone_title),
           style = MaterialTheme.typography.titleLarge.copy(
             fontWeight = FontWeight.SemiBold
           ),
@@ -140,7 +142,7 @@ fun RequiredPhoneDialog(
         )
 
         Text(
-          text = "Video hasil proses akan otomatis dikirimkan ke chat WhatsApp nomor ini.",
+          text = stringResource(id = R.string.dialog_phone_desc),
           style = MaterialTheme.typography.bodyMedium,
           color = Color(0xFF9CA3AF),
           textAlign = TextAlign.Center,
@@ -231,13 +233,14 @@ fun RequiredPhoneDialog(
 
       Spacer(modifier = Modifier.height(2.dp))
 
+      val errorText = stringResource(id = R.string.dialog_phone_error)
       // Tombol Simpan
       GlassButton(
-        text = "Simpan & Lanjutkan",
+        text = stringResource(id = R.string.dialog_phone_save),
         onClick = {
           val normalized = normalizeWhatsAppPhoneNumber(textInput)
           if (normalized.length < 10) {
-            errorMessage = "Nomor WhatsApp belum lengkap (minimal 10 digit)."
+            errorMessage = errorText
           } else {
             onSave(textInput.trim())
           }

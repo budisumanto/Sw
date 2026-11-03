@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.model.formatDisplayPhoneNumber
 import com.example.model.normalizeWhatsAppPhoneNumber
 import com.example.ui.theme.LocalGlass
@@ -85,12 +87,12 @@ fun PhoneNumberInputCard(
 
           Column {
             Text(
-              text = "Nomor WhatsApp Tujuan",
+              text = stringResource(id = R.string.target_phone_number),
               style = MaterialTheme.typography.titleMedium,
               color = g.text
             )
             Text(
-              text = if (isConfigured) "Tujuan pengiriman video HD" else "Nomor belum diisi",
+              text = if (isConfigured) stringResource(id = R.string.target_phone_subtitle) else stringResource(id = R.string.target_phone_not_set),
               style = MaterialTheme.typography.bodyMedium,
               color = if (isConfigured) g.accent else Color(0xFFFCA5A5)
             )
@@ -111,7 +113,7 @@ fun PhoneNumberInputCard(
               .padding(horizontal = 10.dp, vertical = 4.dp)
           ) {
             Text(
-              text = "WAJIB DIISI",
+              text = stringResource(id = R.string.target_phone_mandatory),
               fontSize = 10.sp,
               style = MaterialTheme.typography.labelSmall,
               color = Color(0xFFFF6B6B)
@@ -148,7 +150,7 @@ fun PhoneNumberInputCard(
           }
         } else {
           Text(
-            text = "Sentuh untuk mengisi nomor WhatsApp...",
+            text = stringResource(id = R.string.target_phone_tap_to_fill),
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFFFCA5A5)
           )
@@ -156,7 +158,7 @@ fun PhoneNumberInputCard(
 
         Row(verticalAlignment = Alignment.CenterVertically) {
           Text(
-            text = if (isConfigured) "Ubah" else "Isi",
+            text = if (isConfigured) stringResource(id = R.string.target_phone_edit) else stringResource(id = R.string.target_phone_fill),
             style = MaterialTheme.typography.labelSmall,
             color = if (isConfigured) g.textMuted else Color(0xFFFF6B6B)
           )
@@ -183,7 +185,7 @@ fun PhoneNumberInputCard(
           modifier = Modifier.size(15.dp)
         )
         Text(
-          text = "Jika video tidak masuk ke chat WhatsApp Anda, mohon periksa kembali apakah nomor sudah ditulis dengan benar.",
+          text = stringResource(id = R.string.target_phone_note),
           style = MaterialTheme.typography.bodyMedium,
           color = g.textMuted
         )
