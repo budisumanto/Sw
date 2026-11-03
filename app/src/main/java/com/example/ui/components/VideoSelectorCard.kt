@@ -60,14 +60,21 @@ fun VideoSelectorCard(
     }
   }
 
+  val openGallery = {
+    mediaPicker.launch(
+      PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+    )
+  }
+
   GlassCard(
     modifier = modifier
       .fillMaxWidth()
       .testTag("video_selector_card"),
-    radius = 24.dp
+    radius = 24.dp,
+    onClick = if (selectedVideo == null) openGallery else null
   ) {
     if (selectedVideo == null) {
-      // State 1: Dropzone Kaca Minimalis Menawan
+      // State 1: Dropzone Kaca Minimalis Menawan - Seluruh card dapat di-tap langsung untuk buka galeri
       Column(
         modifier = Modifier
           .fillMaxWidth()
@@ -81,11 +88,7 @@ fun VideoSelectorCard(
             .clip(CircleShape)
             .background(g.accent.copy(alpha = 0.16f))
             .border(1.dp, g.accent.copy(alpha = 0.40f), CircleShape)
-            .pressable {
-              mediaPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-              )
-            },
+            .pressable { openGallery() },
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -120,11 +123,7 @@ fun VideoSelectorCard(
         // Tombol Elegan Pilih Video
         GlassButton(
           text = "Buka Galeri Video",
-          onClick = {
-            mediaPicker.launch(
-              PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-            )
-          },
+          onClick = openGallery,
           primary = true,
           modifier = Modifier
             .fillMaxWidth()

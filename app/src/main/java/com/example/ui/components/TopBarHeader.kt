@@ -13,18 +13,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.theme.LocalGlass
 
 @Composable
@@ -39,18 +37,17 @@ fun TopBarHeader(
       .padding(horizontal = 4.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    // Glass icon square
+    // Glass icon square with custom header SVG logo
     Box(
       modifier = Modifier
         .size(46.dp)
         .glass(radius = 16.dp),
       contentAlignment = Alignment.Center
     ) {
-      Icon(
-        imageVector = Icons.Rounded.AutoAwesome,
+      Image(
+        painter = painterResource(id = R.drawable.ic_header_logo),
         contentDescription = "StatusHD Logo",
-        tint = g.accent,
-        modifier = Modifier.size(24.dp)
+        modifier = Modifier.size(28.dp)
       )
     }
 

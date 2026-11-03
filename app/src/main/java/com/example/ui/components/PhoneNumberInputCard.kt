@@ -97,24 +97,26 @@ fun PhoneNumberInputCard(
           }
         }
 
-        // Pill Badge Status
-        Box(
-          modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (isConfigured) g.accent.copy(alpha = 0.14f) else Color(0xFFEF4444).copy(alpha = 0.18f))
-            .border(
-              1.dp,
-              if (isConfigured) g.accent.copy(alpha = 0.35f) else Color(0xFFEF4444).copy(alpha = 0.45f),
-              RoundedCornerShape(999.dp)
+        // Pill Badge Status jika belum diisi
+        if (!isConfigured) {
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(999.dp))
+              .background(Color(0xFFEF4444).copy(alpha = 0.18f))
+              .border(
+                1.dp,
+                Color(0xFFEF4444).copy(alpha = 0.45f),
+                RoundedCornerShape(999.dp)
+              )
+              .padding(horizontal = 10.dp, vertical = 4.dp)
+          ) {
+            Text(
+              text = "WAJIB DIISI",
+              fontSize = 10.sp,
+              style = MaterialTheme.typography.labelSmall,
+              color = Color(0xFFFF6B6B)
             )
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-          Text(
-            text = if (isConfigured) "SIAP DIGUNAKAN" else "WAJIB DIISI",
-            fontSize = 10.sp,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isConfigured) g.accent else Color(0xFFFF6B6B)
-          )
+          }
         }
       }
 
