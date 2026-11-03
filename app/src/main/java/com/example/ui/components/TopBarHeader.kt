@@ -14,126 +14,103 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Hd
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.ElectricMint
-import com.example.ui.theme.IOSTextPrimary
-import com.example.ui.theme.IOSTextSecondary
+import com.example.ui.theme.LocalGlass
 
 @Composable
 fun TopBarHeader(
   modifier: Modifier = Modifier
 ) {
+  val g = LocalGlass.current
+
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 4.dp, vertical = 12.dp),
+      .padding(horizontal = 4.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      // Frosted Glass Badge with subtle mint halo glow
+      // Glass icon square
       Box(
         modifier = Modifier
-          .size(44.dp)
-          .clip(RoundedCornerShape(16.dp))
-          .background(
-            Brush.linearGradient(
-              listOf(
-                Color(0xFFFFFFFF).copy(alpha = 0.12f),
-                Color(0xFFFFFFFF).copy(alpha = 0.03f)
-              )
-            )
-          )
-          .border(
-            iosGlassBorder(1.dp),
-            RoundedCornerShape(16.dp)
-          ),
+          .size(46.dp)
+          .glass(radius = 16.dp),
         contentAlignment = Alignment.Center
       ) {
         Icon(
-          imageVector = Icons.Default.AutoAwesome,
+          imageVector = Icons.Rounded.AutoAwesome,
           contentDescription = "StatusHD Logo",
-          tint = ElectricMint,
-          modifier = Modifier.size(22.dp)
+          tint = g.accent,
+          modifier = Modifier.size(24.dp)
         )
       }
 
-      Spacer(modifier = Modifier.width(12.dp))
+      Spacer(modifier = Modifier.width(14.dp))
 
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Text(
             text = "StatusHD",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = IOSTextPrimary,
-            letterSpacing = (-0.5).sp
+            style = MaterialTheme.typography.titleMedium,
+            color = g.text
           )
-          Spacer(modifier = Modifier.width(6.dp))
+          Spacer(modifier = Modifier.width(8.dp))
           Box(
             modifier = Modifier
-              .clip(RoundedCornerShape(6.dp))
-              .background(ElectricMint.copy(alpha = 0.15f))
+              .clip(RoundedCornerShape(999.dp))
+              .background(g.accent.copy(alpha = 0.16f))
               .border(
-                androidx.compose.foundation.BorderStroke(1.dp, ElectricMint.copy(alpha = 0.35f)),
-                RoundedCornerShape(6.dp)
+                1.dp,
+                g.accent.copy(alpha = 0.40f),
+                RoundedCornerShape(999.dp)
               )
-              .padding(horizontal = 5.dp, vertical = 2.dp)
+              .padding(horizontal = 7.dp, vertical = 2.dp)
           ) {
             Text(
               text = "PRO",
-              fontSize = 9.sp,
-              fontWeight = FontWeight.Black,
-              color = ElectricMint,
-              letterSpacing = 0.5.sp
+              fontSize = 10.sp,
+              style = MaterialTheme.typography.labelSmall,
+              color = g.accent
             )
           }
         }
         Text(
-          text = "Kualitas Jernih Tanpa Pecah",
-          fontSize = 12.sp,
-          color = IOSTextSecondary,
-          fontWeight = FontWeight.Normal
+          text = "Kualitas Jernih untuk Status WA",
+          style = MaterialTheme.typography.bodyMedium,
+          color = g.textMuted
         )
       }
     }
 
-    // Right Pill Indicator: Pure 1080p Badge
+    // Pill status 1080p
     Box(
       modifier = Modifier
-        .clip(RoundedCornerShape(14.dp))
-        .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-        .border(
-          iosGlassBorder(1.dp),
-          RoundedCornerShape(14.dp)
-        )
-        .padding(horizontal = 10.dp, vertical = 6.dp)
+        .glass(radius = 999.dp)
+        .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
           modifier = Modifier
-            .size(6.dp)
+            .size(7.dp)
             .clip(CircleShape)
-            .background(ElectricMint)
+            .background(g.accent)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
           text = "1080p HD",
-          fontSize = 11.sp,
-          fontWeight = FontWeight.SemiBold,
-          color = IOSTextPrimary
+          style = MaterialTheme.typography.labelSmall,
+          color = g.text
         )
       }
     }

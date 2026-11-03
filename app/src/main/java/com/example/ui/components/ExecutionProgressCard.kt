@@ -1,49 +1,39 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ProcessingState
-import com.example.ui.theme.ElectricMint
-import com.example.ui.theme.ElectricMintDark
-import com.example.ui.theme.IOSTextPrimary
-import com.example.ui.theme.IOSTextSecondary
+import com.example.ui.theme.LocalGlass
+import com.example.ui.theme.pressable
 
 @Composable
 fun ExecutionProgressCard(
@@ -54,67 +44,26 @@ fun ExecutionProgressCard(
   onReset: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val g = LocalGlass.current
+
   when (processingState) {
     is ProcessingState.Idle -> {
       if (hasVideoSelected) {
-        // Tombol Utama Liquid Capsule
-        Button(
+        GlassButton(
+          text = "Optimalkan Kualitas HD",
           onClick = onStartOptimize,
+          primary = true,
           modifier = modifier
             .fillMaxWidth()
-            .height(58.dp)
-            .testTag("optimize_for_wa_status_button"),
-          shape = RoundedCornerShape(24.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color(0xFF021E14)
-          ),
-          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.35f))
-        ) {
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(
-                Brush.horizontalGradient(
-                  listOf(
-                    Color(0xFF10E599),
-                    Color(0xFF00F2FE),
-                    Color(0xFF059669)
-                  )
-                ),
-                shape = RoundedCornerShape(24.dp)
-              ),
-            contentAlignment = Alignment.Center
-          ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = Color(0xFF022115),
-                modifier = Modifier.size(20.dp)
-              )
-              Spacer(modifier = Modifier.width(10.dp))
-              Text(
-                text = "Optimalkan Kualitas HD",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF022115),
-                letterSpacing = (-0.3).sp
-              )
-            }
-          }
-        }
+            .testTag("optimize_for_wa_status_button")
+        )
       }
     }
 
     is ProcessingState.Preparing -> {
-      IOSLiquidGlassCard(
+      GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 26.dp,
-        padding = 22.dp
+        radius = 24.dp
       ) {
         Row(
           modifier = Modifier
@@ -123,28 +72,26 @@ fun ExecutionProgressCard(
           verticalAlignment = Alignment.CenterVertically
         ) {
           CircularProgressIndicator(
-            color = ElectricMint,
+            color = g.accent,
             strokeWidth = 3.dp,
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier.size(24.dp)
           )
           Spacer(modifier = Modifier.width(16.dp))
           Text(
             text = processingState.message,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = IOSTextPrimary
+            style = MaterialTheme.typography.bodyLarge,
+            color = g.text
           )
         }
       }
     }
 
     is ProcessingState.Compressing -> {
-      IOSLiquidGlassCard(
+      GlassCard(
         modifier = modifier
           .fillMaxWidth()
           .testTag("execution_progress_card"),
-        cornerRadius = 28.dp,
-        padding = 22.dp
+        radius = 24.dp
       ) {
         Column(
           modifier = Modifier.fillMaxWidth(),
@@ -162,48 +109,42 @@ fun ExecutionProgressCard(
                 } else {
                   "Mengompres Video HD..."
                 },
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = IOSTextPrimary
+                style = MaterialTheme.typography.titleMedium,
+                color = g.text
               )
               Text(
-                text = "Menggunakan encoder libx264 profile high",
-                fontSize = 11.sp,
-                color = IOSTextSecondary
+                text = "Encoder libx264 profile high",
+                style = MaterialTheme.typography.bodyMedium,
+                color = g.textMuted
               )
             }
 
             val pct = (processingState.overallProgress * 100).toInt()
             Text(
               text = "$pct%",
-              fontSize = 18.sp,
-              fontWeight = FontWeight.ExtraBold,
-              color = ElectricMint
+              style = MaterialTheme.typography.titleMedium,
+              color = g.accent
             )
           }
 
-          // Progress Bar Bergradasi Lembut
           LinearProgressIndicator(
             progress = { processingState.overallProgress },
             modifier = Modifier
               .fillMaxWidth()
-              .height(9.dp)
-              .clip(RoundedCornerShape(6.dp))
+              .height(8.dp)
+              .clip(RoundedCornerShape(999.dp))
               .testTag("encoding_progress_bar"),
-            color = ElectricMint,
-            trackColor = Color(0xFFFFFFFF).copy(alpha = 0.08f)
+            color = g.accent,
+            trackColor = Color.White.copy(alpha = 0.08f)
           )
 
-          // Kotak Catatan Edukatif: Jangan potong/edit di WA
+          // Kotak Catatan Edukatif
           Box(
             modifier = Modifier
               .fillMaxWidth()
               .clip(RoundedCornerShape(16.dp))
-              .background(Color(0xFF00F2FE).copy(alpha = 0.06f))
-              .border(
-                BorderStroke(1.dp, Color(0xFF00F2FE).copy(alpha = 0.20f)),
-                RoundedCornerShape(16.dp)
-              )
+              .background(g.accent2.copy(alpha = 0.08f))
+              .border(1.dp, g.accent2.copy(alpha = 0.20f), RoundedCornerShape(16.dp))
               .padding(14.dp)
           ) {
             Row(
@@ -211,18 +152,17 @@ fun ExecutionProgressCard(
               horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
               Icon(
-                imageVector = Icons.Default.Info,
+                imageVector = Icons.Rounded.Info,
                 contentDescription = null,
-                tint = Color(0xFF38BDF8),
+                tint = g.accent2,
                 modifier = Modifier
                   .size(16.dp)
                   .padding(top = 1.dp)
               )
               Text(
                 text = "Penting: Jangan mengedit atau memotong ulang video yang diterima di WhatsApp Anda, karena sistem WhatsApp akan otomatis mengompresi ulang dan menurunkan kualitasnya.",
-                fontSize = 11.sp,
-                color = Color(0xFFBAE6FD),
-                lineHeight = 16.sp
+                style = MaterialTheme.typography.bodyMedium,
+                color = g.text
               )
             }
           }
@@ -234,21 +174,17 @@ fun ExecutionProgressCard(
           ) {
             Box(
               modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-                .border(
-                  BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.40f)),
-                  RoundedCornerShape(14.dp)
-                )
-                .clickable(onClick = onCancel)
-                .padding(horizontal = 14.dp, vertical = 7.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(Color.White.copy(alpha = 0.06f))
+                .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.35f), RoundedCornerShape(999.dp))
+                .pressable(onCancel)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .testTag("cancel_optimization_button"),
               contentAlignment = Alignment.Center
             ) {
               Text(
                 text = "Batalkan",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFFCA5A5)
               )
             }
@@ -258,34 +194,32 @@ fun ExecutionProgressCard(
     }
 
     is ProcessingState.Uploading -> {
-      IOSLiquidGlassCard(
+      GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 28.dp,
-        padding = 22.dp
+        radius = 24.dp
       ) {
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
           CircularProgressIndicator(
-            color = ElectricMint,
+            color = g.accent,
             strokeWidth = 3.dp,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(24.dp)
           )
           Spacer(modifier = Modifier.width(16.dp))
           Column {
             Text(
               text = processingState.statusText,
-              fontSize = 14.sp,
-              fontWeight = FontWeight.SemiBold,
-              color = IOSTextPrimary
+              style = MaterialTheme.typography.bodyLarge,
+              color = g.text
             )
             Text(
-              text = "Mengirimkan langsung ke chat WhatsApp kamu...",
-              fontSize = 11.sp,
-              color = IOSTextSecondary
+              text = "Mengirim langsung ke WhatsApp kamu...",
+              style = MaterialTheme.typography.bodyMedium,
+              color = g.textMuted
             )
           }
         }
@@ -293,10 +227,9 @@ fun ExecutionProgressCard(
     }
 
     is ProcessingState.Cancelled -> {
-      IOSLiquidGlassCard(
+      GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        padding = 18.dp
+        radius = 24.dp
       ) {
         Row(
           modifier = Modifier.fillMaxWidth(),
@@ -305,7 +238,7 @@ fun ExecutionProgressCard(
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-              imageVector = Icons.Default.Close,
+              imageVector = Icons.Rounded.Close,
               contentDescription = null,
               tint = Color(0xFFFCD34D),
               modifier = Modifier.size(20.dp)
@@ -313,28 +246,24 @@ fun ExecutionProgressCard(
             Spacer(modifier = Modifier.width(10.dp))
             Text(
               text = "Proses dibatalkan",
-              color = IOSTextPrimary,
-              fontWeight = FontWeight.Medium,
-              fontSize = 14.sp
+              style = MaterialTheme.typography.bodyLarge,
+              color = g.text
             )
           }
 
           Box(
             modifier = Modifier
-              .clip(RoundedCornerShape(12.dp))
-              .background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
-              .border(
-                BorderStroke(1.dp, IOSGlassHighlightTop),
-                RoundedCornerShape(12.dp)
-              )
-              .clickable(onClick = onReset)
-              .padding(horizontal = 12.dp, vertical = 6.dp),
+              .clip(RoundedCornerShape(999.dp))
+              .background(g.fillStrong)
+              .border(1.dp, g.border, RoundedCornerShape(999.dp))
+              .pressable(onReset)
+              .padding(horizontal = 14.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
           ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(13.dp), tint = IOSTextPrimary)
+              Icon(imageVector = Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(13.dp), tint = g.text)
               Spacer(modifier = Modifier.width(4.dp))
-              Text("Ulangi", fontSize = 12.sp, color = IOSTextPrimary)
+              Text("Ulangi", style = MaterialTheme.typography.labelSmall, color = g.text)
             }
           }
         }
@@ -342,15 +271,15 @@ fun ExecutionProgressCard(
     }
 
     is ProcessingState.Error -> {
-      IOSLiquidGlassCard(
+      GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        padding = 20.dp
+        radius = 24.dp,
+        strong = true
       ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-              imageVector = Icons.Default.ErrorOutline,
+              imageVector = Icons.Rounded.ErrorOutline,
               contentDescription = null,
               tint = Color(0xFFF87171),
               modifier = Modifier.size(22.dp)
@@ -358,9 +287,8 @@ fun ExecutionProgressCard(
             Spacer(modifier = Modifier.width(10.dp))
             Text(
               text = processingState.message,
-              color = IOSTextPrimary,
-              fontWeight = FontWeight.Medium,
-              fontSize = 14.sp
+              style = MaterialTheme.typography.bodyLarge,
+              color = g.text
             )
           }
 
@@ -368,16 +296,11 @@ fun ExecutionProgressCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
           ) {
-            Button(
+            GlassButton(
+              text = "Coba Lagi",
               onClick = onReset,
-              shape = RoundedCornerShape(14.dp),
-              colors = ButtonDefaults.buttonColors(
-                containerColor = ElectricMint,
-                contentColor = Color(0xFF021E14)
-              )
-            ) {
-              Text("Coba Lagi", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
+              primary = true
+            )
           }
         }
       }

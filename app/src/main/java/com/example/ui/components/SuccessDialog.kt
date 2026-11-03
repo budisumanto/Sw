@@ -1,44 +1,31 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.ui.theme.ElectricMint
-import com.example.ui.theme.ElectricMintDark
-import com.example.ui.theme.IOSTextPrimary
-import com.example.ui.theme.IOSTextSecondary
+import com.example.ui.theme.LocalGlass
 
 @Composable
 fun SuccessDialog(
@@ -46,124 +33,71 @@ fun SuccessDialog(
   onOpenWhatsApp: () -> Unit,
   onDismiss: () -> Unit
 ) {
+  val g = LocalGlass.current
+
   Dialog(onDismissRequest = onDismiss) {
-    IOSLiquidGlassCard(
+    // Dialog uses glassFlat as per DESIGN.md section 6
+    Column(
       modifier = Modifier
         .fillMaxWidth()
+        .glassFlat(radius = 32.dp)
+        .padding(26.dp)
         .testTag("success_dialog"),
-      cornerRadius = 32.dp,
-      padding = 26.dp,
-      fillColor = Color(0xFF070B12).copy(alpha = 0.95f),
-      borderStroke = BorderStroke(
-        1.dp,
-        Brush.verticalGradient(
-          listOf(
-            ElectricMint.copy(alpha = 0.6f),
-            Color(0xFFFFFFFF).copy(alpha = 0.15f),
-            Color(0xFFFFFFFF).copy(alpha = 0.05f)
-          )
-        )
-      )
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+      // Lingkaran Centang Sukses
+      Box(
+        modifier = Modifier
+          .size(68.dp)
+          .clip(CircleShape)
+          .background(g.accent.copy(alpha = 0.20f))
+          .border(1.dp, g.accent.copy(alpha = 0.55f), CircleShape),
+        contentAlignment = Alignment.Center
       ) {
-        // Lingkaran Centang Sukses Radiant
-        Box(
-          modifier = Modifier
-            .size(70.dp)
-            .clip(CircleShape)
-            .background(
-              Brush.radialGradient(
-                listOf(
-                  ElectricMint.copy(alpha = 0.30f),
-                  Color(0xFF00F2FE).copy(alpha = 0.08f),
-                  Color.Transparent
-                )
-              )
-            )
-            .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.6f)), CircleShape),
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            imageVector = Icons.Default.Check,
-            contentDescription = null,
-            tint = ElectricMint,
-            modifier = Modifier.size(36.dp)
-          )
-        }
-
-        Text(
-          text = "Berhasil Dikirim!",
-          fontSize = 21.sp,
-          fontWeight = FontWeight.Bold,
-          color = IOSTextPrimary,
-          letterSpacing = (-0.4).sp,
-          textAlign = TextAlign.Center
+        Icon(
+          imageVector = Icons.Rounded.Check,
+          contentDescription = null,
+          tint = g.accent,
+          modifier = Modifier.size(36.dp)
         )
+      }
 
+      Text(
+        text = "Berhasil Dikirim!",
+        style = MaterialTheme.typography.headlineMedium,
+        color = g.text,
+        textAlign = TextAlign.Center
+      )
+
+      Text(
+        text = message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = g.textMuted,
+        textAlign = TextAlign.Center
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+
+      // Tombol Buka WhatsApp
+      GlassButton(
+        text = "Buka WhatsApp",
+        onClick = {
+          onOpenWhatsApp()
+          onDismiss()
+        },
+        primary = true,
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("open_whatsapp_button")
+      )
+
+      TextButton(onClick = onDismiss) {
         Text(
-          text = message,
-          fontSize = 14.sp,
-          color = IOSTextSecondary,
-          textAlign = TextAlign.Center,
-          lineHeight = 20.sp
+          text = "Tutup",
+          style = MaterialTheme.typography.labelSmall,
+          color = g.textMuted
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Tombol Buka WhatsApp
-        Button(
-          onClick = {
-            onOpenWhatsApp()
-            onDismiss()
-          },
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(54.dp)
-            .testTag("open_whatsapp_button"),
-          shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color(0xFF021E14)
-          ),
-          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.30f))
-        ) {
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(
-                Brush.horizontalGradient(
-                  listOf(
-                    Color(0xFF10E599),
-                    Color(0xFF00F2FE),
-                    Color(0xFF059669)
-                  )
-                ),
-                shape = RoundedCornerShape(20.dp)
-              ),
-            contentAlignment = Alignment.Center
-          ) {
-            Text(
-              text = "Buka WhatsApp",
-              fontWeight = FontWeight.Bold,
-              fontSize = 16.sp,
-              color = Color(0xFF022115),
-              letterSpacing = (-0.2).sp
-            )
-          }
-        }
-
-        TextButton(onClick = onDismiss) {
-          Text(
-            text = "Tutup",
-            color = IOSTextSecondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-          )
-        }
       }
     }
   }

@@ -5,8 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.example.ui.components.AppBackground
 import com.example.ui.screens.StatusHDOptimizerScreen
-import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.AppTheme
 import com.example.viewmodel.OptimizerViewModel
 
 class MainActivity : ComponentActivity() {
@@ -17,8 +18,10 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme(darkTheme = true) {
-        StatusHDOptimizerScreen(viewModel = optimizerViewModel)
+      AppTheme(darkTheme = true) {
+        AppBackground {
+          StatusHDOptimizerScreen(viewModel = optimizerViewModel)
+        }
       }
     }
   }
