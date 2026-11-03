@@ -19,14 +19,15 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `anti-bloat bitrate formula clamps high bitrates to 6000k`() {
+  fun `anti-bloat bitrate formula clamps high bitrates to 8000k`() {
+    // 50 MB in 10 seconds -> ~40,000 kbps
     val sizeBytes = 50L * 1024 * 1024
     val durationMs = 10_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(6000, maxrate)
-    assertEquals(12000, bufsize)
+    assertEquals(8000, maxrate)
+    assertEquals(16000, bufsize)
   }
 
   @Test
@@ -52,7 +53,7 @@ class ExampleUnitTest {
   }
 
   @Test
-  fun `execution args strictly match WhatsApp HD engine specifications with dense keyframe structure`() {
+  fun `execution args strictly match WhatsApp HD engine specifications with lanczos scale and high profile`() {
     val args = StatusHDOptimizerEngine.buildExecutionArgs(
       inputFile = "/storage/input.mp4",
       outputFile = "/storage/output.mp4",
@@ -66,7 +67,9 @@ class ExampleUnitTest {
 
     assertEquals("-y", args[0])
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
-    assertEquals("faster", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("medium", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
+    assertEquals("4.0", argsList[argsList.indexOf("-level") + 1])
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
@@ -78,6 +81,7 @@ class ExampleUnitTest {
     assertTrue(argsList.contains("-vf"))
     val vfIndex = argsList.indexOf("-vf")
     assertEquals(StatusHDOptimizerEngine.SCALE_FILTER, argsList[vfIndex + 1])
+    assertTrue(StatusHDOptimizerEngine.SCALE_FILTER.endsWith(":flags=lanczos"))
 
     assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])

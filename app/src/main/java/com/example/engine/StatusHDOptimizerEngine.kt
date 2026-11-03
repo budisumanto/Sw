@@ -32,14 +32,14 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
   companion object {
     const val MAX_CHUNK_DURATION_SEC = 90
-    const val SCALE_FILTER = "scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2)"
+    const val SCALE_FILTER = "scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2):flags=lanczos"
 
     fun calculateMaxrateAndBufsize(sizeBytes: Long, durationMs: Long): Pair<Int, Int> {
       val durationSec = (durationMs / 1000.0).coerceAtLeast(1.0)
       val originalBitrateKbps = ((sizeBytes * 8.0) / durationSec) / 1000.0
 
       val maxrate = when {
-        originalBitrateKbps > 6000.0 -> 6000
+        originalBitrateKbps > 8000.0 -> 8000
         originalBitrateKbps < 500.0 -> 500
         else -> originalBitrateKbps.toInt()
       }
@@ -76,7 +76,11 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("-c:v")
       args.add("libx264")
       args.add("-preset")
-      args.add("faster")
+      args.add("medium")
+      args.add("-profile:v")
+      args.add("high")
+      args.add("-level")
+      args.add("4.0")
       args.add("-tune")
       args.add("film")
       args.add("-x264-params")
