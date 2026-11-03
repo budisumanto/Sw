@@ -54,6 +54,8 @@ import com.example.ui.util.PhoneNumberVisualTransformation
 @Composable
 fun RequiredPhoneDialog(
   initialPhone: String = "",
+  canDismiss: Boolean = false,
+  onDismiss: () -> Unit = {},
   onSave: (String) -> Unit
 ) {
   val g = LocalGlass.current
@@ -65,16 +67,23 @@ fun RequiredPhoneDialog(
   val sheetState = rememberModalBottomSheetState(
     skipPartiallyExpanded = true,
     confirmValueChange = { newState ->
-      // Cegah dismiss ke Hidden jika nomor belum valid
       if (newState == SheetValue.Hidden) {
-        val normalized = normalizeWhatsAppPhoneNumber(textInput)
-        normalized.length >= 10
+        if (canDismiss) {
+          true
+        } else {
+          val normalized = normalizeWhatsAppPhoneNumber(textInput)
+          normalized.length >= 10
+        }
       } else true
     }
   )
 
   ModalBottomSheet(
-    onDismissRequest = { /* Modal wajib diisi */ },
+    onDismissRequest = {
+      if (canDismiss) {
+        onDismiss()
+      }
+    },
     sheetState = sheetState,
     containerColor = Color(0xFF0F131D),
     contentColor = g.text,

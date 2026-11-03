@@ -36,6 +36,7 @@ fun StatusHDOptimizerScreen(
   val context = LocalContext.current
 
   val phoneNumber by viewModel.phoneNumber.collectAsState()
+  val isPhoneNumberValid by viewModel.isPhoneNumberValid.collectAsState()
   val showPhonePromptDialog by viewModel.showPhonePromptDialog.collectAsState()
   val selectedVideo by viewModel.selectedVideo.collectAsState()
   val processingState by viewModel.processingState.collectAsState()
@@ -88,6 +89,8 @@ fun StatusHDOptimizerScreen(
   if (showPhonePromptDialog) {
     RequiredPhoneDialog(
       initialPhone = phoneNumber,
+      canDismiss = isPhoneNumberValid,
+      onDismiss = { viewModel.dismissPhonePromptDialog() },
       onSave = { newPhone -> viewModel.savePhoneNumberFromDialog(newPhone) }
     )
   }

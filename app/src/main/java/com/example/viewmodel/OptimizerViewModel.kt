@@ -94,6 +94,14 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
     _showPhonePromptDialog.value = true
   }
 
+  fun dismissPhonePromptDialog() {
+    val clean = normalizeWhatsAppPhoneNumber(_phoneNumber.value)
+    // Jika nomor sudah terisi dan valid, dialog boleh ditutup
+    if (clean.length >= 10) {
+      _showPhonePromptDialog.value = false
+    }
+  }
+
   fun onVideoSelected(uri: Uri, context: Context) {
     viewModelScope.launch {
       val meta = VideoMetadataHelper.extractMetadata(context, uri)
