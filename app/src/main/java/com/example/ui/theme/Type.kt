@@ -2,12 +2,21 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.R
+
+val PlusJakartaSans = FontFamily(
+    Font(R.font.plus_jakarta_sans, FontWeight.Normal),
+    Font(R.font.plus_jakarta_sans, FontWeight.Medium),
+    Font(R.font.plus_jakarta_sans, FontWeight.SemiBold),
+    Font(R.font.plus_jakarta_sans, FontWeight.Bold)
+)
 
 fun AppTypography(g: GlassTokens): Typography {
-    val font = FontFamily.SansSerif
+    val font = PlusJakartaSans
     return Typography(
         displayLarge = TextStyle(
             fontFamily = font,

@@ -211,35 +211,33 @@ fun ExecutionProgressCard(
             CircularProgressIndicator(
               color = g.accent,
               strokeWidth = 3.dp,
-              modifier = Modifier.size(24.dp)
+              modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(14.dp))
-            Column {
-              Text(
-                text = "Mengirim ke WhatsApp...",
-                style = MaterialTheme.typography.titleMedium,
-                color = g.text
-              )
-              Text(
-                text = processingState.statusText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = g.accent
-              )
-            }
-          }
-
-          if (processingState.totalBytes > 0) {
-            val uploadFraction = (processingState.bytesUploaded.toFloat() / processingState.totalBytes.toFloat()).coerceIn(0f, 1f)
-            LinearProgressIndicator(
-              progress = { uploadFraction },
-              modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(999.dp)),
-              color = g.accent,
-              trackColor = Color.White.copy(alpha = 0.08f)
+            Text(
+              text = if (processingState.totalChunks > 1) {
+                "Mengirim bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+              } else {
+                "Mengirim ke WhatsApp..."
+              },
+              style = MaterialTheme.typography.titleMedium,
+              color = g.text
             )
           }
+
+          val uploadFraction = if (processingState.totalBytes > 0) {
+            (processingState.bytesUploaded.toFloat() / processingState.totalBytes.toFloat()).coerceIn(0f, 1f)
+          } else 0f
+
+          LinearProgressIndicator(
+            progress = { uploadFraction },
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(6.dp)
+              .clip(RoundedCornerShape(999.dp)),
+            color = g.accent,
+            trackColor = Color.White.copy(alpha = 0.08f)
+          )
         }
       }
     }

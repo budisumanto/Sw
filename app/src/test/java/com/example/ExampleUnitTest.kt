@@ -67,7 +67,7 @@ class ExampleUnitTest {
 
     assertEquals("-y", args[0])
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
-    assertEquals("fast", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("medium", argsList[argsList.indexOf("-preset") + 1])
     assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
     assertFalse(argsList.contains("-level"))
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])

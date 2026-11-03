@@ -132,32 +132,41 @@ fun VideoSelectorCard(
         )
       }
     } else {
-      // State 2: Video Terpilih - Tampilan Sinematik Kaca
+      // State 2: Video Terpilih - Tampilan Sinematik Kaca Bersih & Cantik
       Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
         Row(
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF0F131D).copy(alpha = 0.60f))
+            .border(
+              1.dp,
+              Color.White.copy(alpha = 0.12f),
+              RoundedCornerShape(20.dp)
+            )
+            .padding(12.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          // Thumbnail Sinematik Berbingkai Kaca
+          // Poster Sinematik Murni (tanpa badge durasi ganda di dalam)
           Box(
             modifier = Modifier
-              .size(width = 84.dp, height = 84.dp)
-              .clip(RoundedCornerShape(18.dp))
-              .background(Color.Black.copy(alpha = 0.6f))
+              .size(width = 88.dp, height = 88.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .background(Color(0xFF0A0D14))
               .border(
                 1.dp,
-                g.highlight,
-                RoundedCornerShape(18.dp)
+                Color.White.copy(alpha = 0.18f),
+                RoundedCornerShape(16.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
             if (selectedVideo.thumbnailBitmap != null) {
               Image(
                 bitmap = selectedVideo.thumbnailBitmap.asImageBitmap(),
-                contentDescription = "Pratinjau Video",
+                contentDescription = "Poster Video",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
               )
@@ -166,31 +175,14 @@ fun VideoSelectorCard(
                 imageVector = Icons.Rounded.PlayCircle,
                 contentDescription = null,
                 tint = g.accent,
-                modifier = Modifier.size(36.dp)
-              )
-            }
-
-            // Durasi Pill di Kanan Bawah
-            Box(
-              modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(6.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(Color.Black.copy(alpha = 0.75f))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-              Text(
-                text = selectedVideo.formattedDuration,
-                fontSize = 10.sp,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White
+                modifier = Modifier.size(40.dp)
               )
             }
           }
 
-          Spacer(modifier = Modifier.width(14.dp))
+          Spacer(modifier = Modifier.width(16.dp))
 
-          // Detail Video
+          // Detail Video: Judul Nama File, Durasi & Ukuran
           Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -198,37 +190,57 @@ fun VideoSelectorCard(
             Text(
               text = selectedVideo.fileName,
               style = MaterialTheme.typography.titleMedium,
-              color = g.text,
+              color = Color.White,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-              text = "${selectedVideo.formattedDuration} • ${selectedVideo.formattedSize}",
-              style = MaterialTheme.typography.bodyMedium,
-              color = g.accent
-            )
-
-            if (selectedVideo.needsSplitting) {
-              Spacer(modifier = Modifier.height(6.dp))
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              // Badge Durasi Bersih
               Box(
                 modifier = Modifier
                   .clip(RoundedCornerShape(999.dp))
-                  .background(Color(0xFFFEF3C7).copy(alpha = 0.12f))
-                  .border(
-                    BorderStroke(1.dp, Color(0xFFFDE68A).copy(alpha = 0.35f)),
-                    RoundedCornerShape(999.dp)
-                  )
+                  .background(g.accent.copy(alpha = 0.15f))
+                  .border(1.dp, g.accent.copy(alpha = 0.35f), RoundedCornerShape(999.dp))
                   .padding(horizontal = 8.dp, vertical = 3.dp)
               ) {
                 Text(
-                  text = "Dibagi ${selectedVideo.estimatedChunkCount} bagian otomatis (per 90s)",
+                  text = selectedVideo.formattedDuration,
                   fontSize = 11.sp,
-                  color = Color(0xFFFDE68A)
+                  style = MaterialTheme.typography.labelSmall,
+                  color = g.accent
                 )
               }
+
+              // Badge Ukuran Bersih
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(999.dp))
+                  .background(Color.White.copy(alpha = 0.08f))
+                  .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(999.dp))
+                  .padding(horizontal = 8.dp, vertical = 3.dp)
+              ) {
+                Text(
+                  text = selectedVideo.formattedSize,
+                  fontSize = 11.sp,
+                  style = MaterialTheme.typography.labelSmall,
+                  color = Color(0xFFD1D5DB)
+                )
+              }
+            }
+
+            if (selectedVideo.needsSplitting) {
+              Spacer(modifier = Modifier.height(8.dp))
+              Text(
+                text = "Dibagi ${selectedVideo.estimatedChunkCount} bagian otomatis (per 90s)",
+                fontSize = 11.sp,
+                color = Color(0xFFFDE68A)
+              )
             }
           }
         }
@@ -248,7 +260,7 @@ fun VideoSelectorCard(
                   PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
                 )
               }
-              .padding(horizontal = 14.dp, vertical = 8.dp)
+              .padding(horizontal = 16.dp, vertical = 8.dp)
               .testTag("change_video_button"),
             contentAlignment = Alignment.Center
           ) {
