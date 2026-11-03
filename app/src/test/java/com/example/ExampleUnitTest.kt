@@ -19,26 +19,26 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `anti-bloat bitrate formula clamps high bitrates to 15000k`() {
+  fun `anti-bloat bitrate formula clamps high bitrates to 4500k`() {
     // 50 MB in 10 seconds -> ~40,000 kbps
     val sizeBytes = 50L * 1024 * 1024
     val durationMs = 10_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(15000, maxrate)
-    assertEquals(30000, bufsize)
+    assertEquals(4500, maxrate)
+    assertEquals(9000, bufsize)
   }
 
   @Test
-  fun `anti-bloat bitrate formula clamps low bitrates to 2000k`() {
+  fun `anti-bloat bitrate formula clamps low bitrates to 1200k`() {
     val sizeBytes = 500L * 1024
     val durationMs = 30_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(2000, maxrate)
-    assertEquals(4000, bufsize)
+    assertEquals(1200, maxrate)
+    assertEquals(2400, bufsize)
   }
 
   @Test
@@ -67,12 +67,12 @@ class ExampleUnitTest {
 
     assertEquals("-y", args[0])
     assertEquals("libx264", argsList[argsList.indexOf("-c:v") + 1])
-    assertEquals("slow", argsList[argsList.indexOf("-preset") + 1])
+    assertEquals("fast", argsList[argsList.indexOf("-preset") + 1])
     assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
-    assertEquals("4.1", argsList[argsList.indexOf("-level") + 1])
+    assertFalse(argsList.contains("-level"))
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
     assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
-    assertEquals("18", argsList[argsList.indexOf("-crf") + 1])
+    assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
     assertEquals("48", argsList[argsList.indexOf("-g") + 1])
 
     assertEquals("2500k", argsList[argsList.indexOf("-maxrate") + 1])
@@ -85,7 +85,7 @@ class ExampleUnitTest {
 
     assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])
-    assertEquals("192k", argsList[argsList.indexOf("-b:a") + 1])
+    assertEquals("128k", argsList[argsList.indexOf("-b:a") + 1])
     assertEquals("+faststart", argsList[argsList.indexOf("-movflags") + 1])
   }
 

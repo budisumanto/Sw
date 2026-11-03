@@ -39,8 +39,8 @@ class StatusHDOptimizerEngine(private val context: Context) {
       val originalBitrate = (sizeBytes * 8L) / duration / 1000L
 
       var maxrate = originalBitrate.toInt()
-      if (maxrate > 15000) maxrate = 15000
-      if (maxrate < 2000) maxrate = 2000
+      if (maxrate > 4500) maxrate = 4500
+      if (maxrate < 1200) maxrate = 1200
 
       val bufsize = maxrate * 2
       return Pair(maxrate, bufsize)
@@ -75,13 +75,13 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("-c:v")
       args.add("libx264")
       args.add("-preset")
-      args.add("slow")
+      args.add("fast")
       args.add("-tune")
       args.add("film")
       args.add("-x264-params")
       args.add("aq-mode=3")
       args.add("-crf")
-      args.add("18")
+      args.add("20")
       args.add("-g")
       args.add("48")
 
@@ -95,8 +95,6 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
       args.add("-profile:v")
       args.add("high")
-      args.add("-level")
-      args.add("4.1")
 
       args.add("-pix_fmt")
       args.add("yuv420p")
@@ -105,7 +103,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
         args.add("-c:a")
         args.add("aac")
         args.add("-b:a")
-        args.add("192k")
+        args.add("128k")
       } else {
         args.add("-an")
       }

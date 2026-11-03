@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -60,158 +63,205 @@ fun RequiredPhoneDialog(
       usePlatformDefaultWidth = false
     )
   ) {
-    // Pop-up jelas, solid, berlatar gelap kontras tinggi (solid dark canvas), shadow kuat, border tegas
-    Column(
+    // Pop-up mewah Liquid Glass iOS-inspired: deep dark card, subtle luminous gradient, frosted surface, specular highlight
+    Box(
       modifier = Modifier
         .fillMaxWidth(0.92f)
-        .clip(RoundedCornerShape(28.dp))
-        .background(Color(0xFF10141E))
-        .border(1.5.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(28.dp))
-        .padding(24.dp)
-        .testTag("required_phone_dialog"),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-      // Lingkaran Ikon
-      Box(
-        modifier = Modifier
-          .size(66.dp)
-          .clip(CircleShape)
-          .background(g.accent.copy(alpha = 0.18f))
-          .border(1.dp, g.accent.copy(alpha = 0.50f), CircleShape),
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          imageVector = Icons.Rounded.PhoneAndroid,
-          contentDescription = null,
-          tint = g.accent,
-          modifier = Modifier.size(30.dp)
+        .shadow(
+          elevation = 32.dp,
+          shape = RoundedCornerShape(32.dp),
+          ambientColor = Color.Black,
+          spotColor = Color.Black
         )
-      }
-
-      // Header & Judul
+        .clip(RoundedCornerShape(32.dp))
+        .background(
+          Brush.verticalGradient(
+            colors = listOf(
+              Color(0xFF161B26),
+              Color(0xFF0D1017)
+            )
+          )
+        )
+        .border(
+          width = 1.dp,
+          brush = Brush.verticalGradient(
+            colors = listOf(
+              Color.White.copy(alpha = 0.28f),
+              Color.White.copy(alpha = 0.08f)
+            )
+          ),
+          shape = RoundedCornerShape(32.dp)
+        )
+        .padding(26.dp)
+        .testTag("required_phone_dialog"),
+      contentAlignment = Alignment.Center
+    ) {
       Column(
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp)
       ) {
+        // Lingkaran Ikon Luminous dengan efek glow specular
         Box(
           modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(Color(0xFFEF4444).copy(alpha = 0.18f))
-            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.45f), RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-          Text(
-            text = "WAJIB DIISI",
-            fontSize = 10.sp,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFFFF6B6B),
-            letterSpacing = 1.sp
-          )
-        }
-
-        Text(
-          text = "Nomor WhatsApp Kamu",
-          style = MaterialTheme.typography.headlineMedium,
-          color = g.text,
-          textAlign = TextAlign.Center
-        )
-
-        Text(
-          text = "Video kualitas terbaik yang telah diproses akan dikirimkan langsung ke chat WhatsApp nomor ini.",
-          style = MaterialTheme.typography.bodyMedium,
-          color = Color(0xFFD1D5DB),
-          textAlign = TextAlign.Center
-        )
-      }
-
-      // Input Field dengan pemisah jarak spasi otomatis saat mengetik
-      Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        OutlinedTextField(
-          value = textInput,
-          onValueChange = { input ->
-            // Simpan hanya karakter valid (angka dan '+')
-            val filtered = input.filter { it.isDigit() || it == '+' }
-            textInput = filtered
-            if (errorMessage != null) errorMessage = null
-          },
-          visualTransformation = phoneTransformation,
-          modifier = Modifier
-            .fillMaxWidth()
-            .testTag("dialog_phone_input_field"),
-          placeholder = {
-            Text(
-              text = "+62 812 3456 7890",
-              style = MaterialTheme.typography.bodyMedium,
-              color = Color.Gray
+            .size(72.dp)
+            .clip(CircleShape)
+            .background(
+              Brush.radialGradient(
+                colors = listOf(
+                  g.accent.copy(alpha = 0.28f),
+                  g.accent.copy(alpha = 0.08f)
+                )
+              )
             )
-          },
-          singleLine = true,
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-          shape = RoundedCornerShape(16.dp),
-          colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            focusedContainerColor = Color(0xFF1E2433),
-            unfocusedContainerColor = Color(0xFF171B26),
-            focusedBorderColor = g.accent,
-            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
-            cursorColor = g.accent
-          )
-        )
-
-        if (errorMessage != null) {
-          Text(
-            text = errorMessage.orEmpty(),
-            style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFFF87171)
-          )
-        }
-      }
-
-      // Kotak Catatan Edukatif
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .clip(RoundedCornerShape(16.dp))
-          .background(Color(0xFFFFB340).copy(alpha = 0.10f))
-          .border(1.dp, Color(0xFFFFB340).copy(alpha = 0.30f), RoundedCornerShape(16.dp))
-          .padding(14.dp)
-      ) {
-        Row(
-          verticalAlignment = Alignment.Top,
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
+            .border(
+              1.dp,
+              Brush.linearGradient(
+                listOf(
+                  g.accent.copy(alpha = 0.65f),
+                  g.accent.copy(alpha = 0.20f)
+                )
+              ),
+              CircleShape
+            ),
+          contentAlignment = Alignment.Center
         ) {
           Icon(
-            imageVector = Icons.Rounded.Info,
+            imageVector = Icons.Rounded.PhoneAndroid,
             contentDescription = null,
-            tint = Color(0xFFFFB340),
-            modifier = Modifier.size(16.dp)
-          )
-          Text(
-            text = "Pastikan nomor aktif dan benar. Jika video tidak kunjung masuk ke chat WhatsApp Anda, kemungkinan besar terdapat kekeliruan pada penulisan nomor.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFFFFD480)
+            tint = g.accent,
+            modifier = Modifier.size(34.dp)
           )
         }
-      }
 
-      // Tombol Simpan
-      GlassButton(
-        text = "Simpan & Lanjutkan",
-        onClick = {
-          val normalized = normalizeWhatsAppPhoneNumber(textInput)
-          if (normalized.length < 10) {
-            errorMessage = "Nomor WhatsApp belum lengkap (minimal 10 digit angka)."
-          } else {
-            onSave(textInput.trim())
+        // Teks Judul & Deskripsi
+        Column(
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            text = "Nomor WhatsApp",
+            style = MaterialTheme.typography.titleLarge.copy(
+              fontWeight = FontWeight.SemiBold,
+              letterSpacing = (-0.5).sp
+            ),
+            color = Color(0xFFF9FAFB),
+            textAlign = TextAlign.Center
+          )
+
+          Text(
+            text = "Video kualitas jernih akan dikirimkan otomatis langsung ke nomor WhatsApp ini.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF9CA3AF),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 4.dp)
+          )
+        }
+
+        // Input Field Mewah dengan Pemisah Jarak Spasi Otomatis
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          OutlinedTextField(
+            value = textInput,
+            onValueChange = { input ->
+              val filtered = input.filter { it.isDigit() || it == '+' }
+              textInput = filtered
+              if (errorMessage != null) errorMessage = null
+            },
+            visualTransformation = phoneTransformation,
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("dialog_phone_input_field"),
+            placeholder = {
+              Text(
+                text = "+62 812 3456 7890",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF6B7280)
+              )
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            shape = RoundedCornerShape(18.dp),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+              fontWeight = FontWeight.Medium,
+              color = Color.White
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+              focusedTextColor = Color.White,
+              unfocusedTextColor = Color.White,
+              focusedContainerColor = Color(0xFF1E2433).copy(alpha = 0.85f),
+              unfocusedContainerColor = Color(0xFF131722).copy(alpha = 0.70f),
+              focusedBorderColor = g.accent,
+              unfocusedBorderColor = Color.White.copy(alpha = 0.16f),
+              cursorColor = g.accent
+            )
+          )
+
+          if (errorMessage != null) {
+            Text(
+              text = errorMessage.orEmpty(),
+              style = MaterialTheme.typography.labelSmall,
+              color = Color(0xFFF87171),
+              modifier = Modifier.padding(start = 4.dp)
+            )
           }
-        },
-        primary = true,
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("save_mandatory_phone_button")
-      )
+        }
+
+        // Kartu Panduan Edukatif Halus
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF59E0B).copy(alpha = 0.08f))
+            .border(
+              1.dp,
+              Color(0xFFF59E0B).copy(alpha = 0.22f),
+              RoundedCornerShape(16.dp)
+            )
+            .padding(14.dp)
+        ) {
+          Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Rounded.Info,
+              contentDescription = null,
+              tint = Color(0xFFFBBF24),
+              modifier = Modifier
+                .size(17.dp)
+                .padding(top = 1.dp)
+            )
+            Text(
+              text = "Pastikan nomor aktif dan benar. Jika video tidak masuk ke chat WhatsApp Anda, kemungkinan terdapat salah ketik nomor.",
+              style = MaterialTheme.typography.bodySmall,
+              color = Color(0xFFFDE68A),
+              lineHeight = 18.sp
+            )
+          }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        // Tombol Simpan Mewah
+        GlassButton(
+          text = "Simpan & Lanjutkan",
+          onClick = {
+            val normalized = normalizeWhatsAppPhoneNumber(textInput)
+            if (normalized.length < 10) {
+              errorMessage = "Nomor WhatsApp belum lengkap (minimal 10 digit)."
+            } else {
+              onSave(textInput.trim())
+            }
+          },
+          primary = true,
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("save_mandatory_phone_button")
+        )
+      }
     }
   }
 }
