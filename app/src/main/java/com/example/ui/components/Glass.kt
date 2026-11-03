@@ -28,6 +28,7 @@ fun Modifier.glass(radius: Dp = 24.dp, strong: Boolean = false): Modifier {
         .hazeEffect(state = haze) {
             blurRadius = g.blur
             noiseFactor = 0.03f
+            backgroundColor = g.bg
         }
         .background(if (useStrong) g.fillStrong else g.fill, shape)
         .border(
