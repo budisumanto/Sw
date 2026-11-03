@@ -40,6 +40,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.model.normalizeWhatsAppPhoneNumber
 import com.example.ui.theme.LocalGlass
+import com.example.ui.util.PhoneNumberVisualTransformation
 
 @Composable
 fun RequiredPhoneDialog(
@@ -49,20 +50,24 @@ fun RequiredPhoneDialog(
   val g = LocalGlass.current
   var textInput by remember { mutableStateOf(initialPhone) }
   var errorMessage by remember { mutableStateOf<String?>(null) }
+  val phoneTransformation = remember { PhoneNumberVisualTransformation() }
 
   Dialog(
     onDismissRequest = { /* Modal wajib: tidak dapat di-dismiss dengan klik di luar */ },
     properties = DialogProperties(
       dismissOnBackPress = false,
-      dismissOnClickOutside = false
+      dismissOnClickOutside = false,
+      usePlatformDefaultWidth = false
     )
   ) {
-    // Dialog uses glassFlat as per DESIGN.md section 6
+    // Pop-up jelas, solid, berlatar gelap kontras tinggi (solid dark canvas), shadow kuat, border tegas
     Column(
       modifier = Modifier
-        .fillMaxWidth()
-        .glassFlat(radius = 32.dp)
-        .padding(26.dp)
+        .fillMaxWidth(0.92f)
+        .clip(RoundedCornerShape(28.dp))
+        .background(Color(0xFF10141E))
+        .border(1.5.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(28.dp))
+        .padding(24.dp)
         .testTag("required_phone_dialog"),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -113,41 +118,44 @@ fun RequiredPhoneDialog(
         )
 
         Text(
-          text = "Video kualitas HD yang telah dioptimalkan akan dikirimkan langsung ke chat WhatsApp nomor ini.",
+          text = "Video kualitas terbaik yang telah diproses akan dikirimkan langsung ke chat WhatsApp nomor ini.",
           style = MaterialTheme.typography.bodyMedium,
-          color = g.textMuted,
+          color = Color(0xFFD1D5DB),
           textAlign = TextAlign.Center
         )
       }
 
-      // Input Field
+      // Input Field dengan pemisah jarak spasi otomatis saat mengetik
       Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         OutlinedTextField(
           value = textInput,
-          onValueChange = {
-            textInput = it
+          onValueChange = { input ->
+            // Simpan hanya karakter valid (angka dan '+')
+            val filtered = input.filter { it.isDigit() || it == '+' }
+            textInput = filtered
             if (errorMessage != null) errorMessage = null
           },
+          visualTransformation = phoneTransformation,
           modifier = Modifier
             .fillMaxWidth()
             .testTag("dialog_phone_input_field"),
           placeholder = {
             Text(
-              text = "08xxxxxxxxxx atau +62 8xx...",
+              text = "+62 812 3456 7890",
               style = MaterialTheme.typography.bodyMedium,
-              color = g.textMuted.copy(alpha = 0.6f)
+              color = Color.Gray
             )
           },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-          shape = RoundedCornerShape(18.dp),
+          shape = RoundedCornerShape(16.dp),
           colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = g.text,
-            unfocusedTextColor = g.text,
-            focusedContainerColor = Color.White.copy(alpha = 0.08f),
-            unfocusedContainerColor = Color.White.copy(alpha = 0.04f),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedContainerColor = Color(0xFF1E2433),
+            unfocusedContainerColor = Color(0xFF171B26),
             focusedBorderColor = g.accent,
-            unfocusedBorderColor = g.border,
+            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
             cursorColor = g.accent
           )
         )

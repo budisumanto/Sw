@@ -94,6 +94,10 @@ sealed interface ProcessingState {
   data class Uploading(
     val activeChunk: Int,
     val totalChunks: Int,
+    val bytesUploaded: Long = 0L,
+    val totalBytes: Long = 0L,
+    val speedBps: Long = 0L,
+    val remainingSeconds: Long = -1L,
     val statusText: String
   ) : ProcessingState
 
@@ -141,26 +145,33 @@ fun normalizeWhatsAppPhoneNumber(input: String): String {
 }
 
 /**
- * Memformat nomor untuk tampilan UI yang nyaman dibaca pengguna.
- * Contoh: "6281234567890" -> "+62 812-3456-7890"
+ * Memformat nomor telepon dengan spasi rapi untuk kenyamanan pengguna (contoh: +62 812 3456 7890).
  */
 fun formatDisplayPhoneNumber(rawOrNormalized: String): String {
+  val digits = rawOrNormalized.replace(Regex("[^0-9]"), "")
+  if (digits.isEmpty()) return ""
+
+  // Jika diawali 62 atau dinormalisasi
   val clean = normalizeWhatsAppPhoneNumber(rawOrNormalized)
-  if (clean.length < 10) return rawOrNormalized
-  val withoutCountry = clean.substring(2)
-  return when {
-    withoutCountry.length in 9..10 -> {
-      val part1 = withoutCountry.substring(0, 3)
-      val part2 = withoutCountry.substring(3, 7)
-      val part3 = withoutCountry.substring(7)
-      "+62 $part1-$part2-$part3"
-    }
-    withoutCountry.length >= 11 -> {
-      val part1 = withoutCountry.substring(0, 3)
-      val part2 = withoutCountry.substring(3, 7)
-      val part3 = withoutCountry.substring(7)
-      "+62 $part1-$part2-$part3"
-    }
-    else -> "+$clean"
+  if (clean.startsWith("62")) {
+    val rest = clean.substring(2)
+    val chunks = mutableListOf<String>()
+    if (rest.isNotEmpty()) chunks.add(rest.take(3))
+    if (rest.length > 3) chunks.add(rest.substring(3, kotlin.math.min(7, rest.length)))
+    if (rest.length > 7) chunks.add(rest.substring(7, kotlin.math.min(11, rest.length)))
+    if (rest.length > 11) chunks.add(rest.substring(11))
+    return "+62 " + chunks.joinToString(" ")
   }
+
+  // Jika dimulai dengan 0
+  if (digits.startsWith("0")) {
+    val chunks = mutableListOf<String>()
+    if (digits.isNotEmpty()) chunks.add(digits.take(4))
+    if (digits.length > 4) chunks.add(digits.substring(4, kotlin.math.min(8, digits.length)))
+    if (digits.length > 8) chunks.add(digits.substring(8, kotlin.math.min(12, digits.length)))
+    if (digits.length > 12) chunks.add(digits.substring(12))
+    return chunks.joinToString(" ")
+  }
+
+  return rawOrNormalized
 }

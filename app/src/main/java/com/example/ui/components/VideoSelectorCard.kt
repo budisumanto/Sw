@@ -108,7 +108,7 @@ fun VideoSelectorCard(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-          text = "Video akan di-encode ke resolusi HD 1080p dengan algoritma x264 agar kualitas visual tetap jernih di WhatsApp.",
+          text = "Video akan diproses agar tetap jernih dan tajam saat diunggah ke status WhatsApp kamu.",
           style = MaterialTheme.typography.bodyMedium,
           color = g.textMuted,
           textAlign = TextAlign.Center,

@@ -35,14 +35,13 @@ class StatusHDOptimizerEngine(private val context: Context) {
     const val SCALE_FILTER = "scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2):flags=lanczos"
 
     fun calculateMaxrateAndBufsize(sizeBytes: Long, durationMs: Long): Pair<Int, Int> {
-      val durationSec = (durationMs / 1000.0).coerceAtLeast(1.0)
-      val originalBitrateKbps = ((sizeBytes * 8.0) / durationSec) / 1000.0
+      val duration = (durationMs / 1000L).coerceAtLeast(1L)
+      val originalBitrate = (sizeBytes * 8L) / duration / 1000L
 
-      val maxrate = when {
-        originalBitrateKbps > 8000.0 -> 8000
-        originalBitrateKbps < 500.0 -> 500
-        else -> originalBitrateKbps.toInt()
-      }
+      var maxrate = originalBitrate.toInt()
+      if (maxrate > 15000) maxrate = 15000
+      if (maxrate < 2000) maxrate = 2000
+
       val bufsize = maxrate * 2
       return Pair(maxrate, bufsize)
     }
@@ -76,17 +75,13 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("-c:v")
       args.add("libx264")
       args.add("-preset")
-      args.add("medium")
-      args.add("-profile:v")
-      args.add("high")
-      args.add("-level")
-      args.add("4.0")
+      args.add("slow")
       args.add("-tune")
       args.add("film")
       args.add("-x264-params")
       args.add("aq-mode=3")
       args.add("-crf")
-      args.add("20")
+      args.add("18")
       args.add("-g")
       args.add("48")
 
@@ -98,6 +93,11 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("-vf")
       args.add(SCALE_FILTER)
 
+      args.add("-profile:v")
+      args.add("high")
+      args.add("-level")
+      args.add("4.1")
+
       args.add("-pix_fmt")
       args.add("yuv420p")
 
@@ -105,7 +105,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
         args.add("-c:a")
         args.add("aac")
         args.add("-b:a")
-        args.add("128k")
+        args.add("192k")
       } else {
         args.add("-an")
       }

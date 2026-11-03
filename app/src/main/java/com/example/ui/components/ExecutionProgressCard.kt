@@ -50,7 +50,7 @@ fun ExecutionProgressCard(
     is ProcessingState.Idle -> {
       if (hasVideoSelected) {
         GlassButton(
-          text = "Optimalkan Kualitas HD",
+          text = "Kirim ke Status WhatsApp",
           onClick = onStartOptimize,
           primary = true,
           modifier = modifier
@@ -105,15 +105,15 @@ fun ExecutionProgressCard(
             Column {
               Text(
                 text = if (processingState.totalChunks > 1) {
-                  "Mengompres bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+                  "Memproses bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
                 } else {
-                  "Mengompres Video HD..."
+                  "Memproses Video..."
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = g.text
               )
               Text(
-                text = "Encoder libx264 profile high",
+                text = "Menyesuaikan kejernihan video",
                 style = MaterialTheme.typography.bodyMedium,
                 color = g.textMuted
               )
@@ -198,28 +198,46 @@ fun ExecutionProgressCard(
         modifier = modifier.fillMaxWidth(),
         radius = 24.dp
       ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-          verticalAlignment = Alignment.CenterVertically
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-          CircularProgressIndicator(
-            color = g.accent,
-            strokeWidth = 3.dp,
-            modifier = Modifier.size(24.dp)
-          )
-          Spacer(modifier = Modifier.width(16.dp))
-          Column {
-            Text(
-              text = processingState.statusText,
-              style = MaterialTheme.typography.bodyLarge,
-              color = g.text
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            CircularProgressIndicator(
+              color = g.accent,
+              strokeWidth = 3.dp,
+              modifier = Modifier.size(24.dp)
             )
-            Text(
-              text = "Mengirim langsung ke WhatsApp kamu...",
-              style = MaterialTheme.typography.bodyMedium,
-              color = g.textMuted
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+              Text(
+                text = "Mengirim ke WhatsApp...",
+                style = MaterialTheme.typography.titleMedium,
+                color = g.text
+              )
+              Text(
+                text = processingState.statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = g.accent
+              )
+            }
+          }
+
+          if (processingState.totalBytes > 0) {
+            val uploadFraction = (processingState.bytesUploaded.toFloat() / processingState.totalBytes.toFloat()).coerceIn(0f, 1f)
+            LinearProgressIndicator(
+              progress = { uploadFraction },
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(999.dp)),
+              color = g.accent,
+              trackColor = Color.White.copy(alpha = 0.08f)
             )
           }
         }

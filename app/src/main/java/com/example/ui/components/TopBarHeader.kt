@@ -59,32 +59,11 @@ fun TopBarHeader(
       Spacer(modifier = Modifier.width(14.dp))
 
       Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(
-            text = "StatusHD",
-            style = MaterialTheme.typography.titleMedium,
-            color = g.text
-          )
-          Spacer(modifier = Modifier.width(8.dp))
-          Box(
-            modifier = Modifier
-              .clip(RoundedCornerShape(999.dp))
-              .background(g.accent.copy(alpha = 0.16f))
-              .border(
-                1.dp,
-                g.accent.copy(alpha = 0.40f),
-                RoundedCornerShape(999.dp)
-              )
-              .padding(horizontal = 7.dp, vertical = 2.dp)
-          ) {
-            Text(
-              text = "PRO",
-              fontSize = 10.sp,
-              style = MaterialTheme.typography.labelSmall,
-              color = g.accent
-            )
-          }
-        }
+        Text(
+          text = "StatusHD",
+          style = MaterialTheme.typography.titleMedium,
+          color = g.text
+        )
         Text(
           text = "Kualitas Jernih untuk Status WA",
           style = MaterialTheme.typography.bodyMedium,
@@ -93,7 +72,7 @@ fun TopBarHeader(
       }
     }
 
-    // Pill status 1080p
+    // Pill status Kualitas Jernih
     Box(
       modifier = Modifier
         .glass(radius = 999.dp)
@@ -108,7 +87,7 @@ fun TopBarHeader(
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-          text = "1080p HD",
+          text = "Jernih",
           style = MaterialTheme.typography.labelSmall,
           color = g.text
         )

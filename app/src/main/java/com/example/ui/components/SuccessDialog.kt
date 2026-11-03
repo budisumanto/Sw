@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
@@ -21,10 +22,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.ui.theme.LocalGlass
 
 @Composable
@@ -35,13 +38,20 @@ fun SuccessDialog(
 ) {
   val g = LocalGlass.current
 
-  Dialog(onDismissRequest = onDismiss) {
-    // Dialog uses glassFlat as per DESIGN.md section 6
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(
+      usePlatformDefaultWidth = false
+    )
+  ) {
+    // Pop-up jelas, tajam, berlatar solid kontras tinggi
     Column(
       modifier = Modifier
-        .fillMaxWidth()
-        .glassFlat(radius = 32.dp)
-        .padding(26.dp)
+        .fillMaxWidth(0.90f)
+        .clip(RoundedCornerShape(28.dp))
+        .background(Color(0xFF10141E))
+        .border(1.5.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(28.dp))
+        .padding(24.dp)
         .testTag("success_dialog"),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -73,7 +83,7 @@ fun SuccessDialog(
       Text(
         text = message,
         style = MaterialTheme.typography.bodyMedium,
-        color = g.textMuted,
+        color = Color(0xFFD1D5DB),
         textAlign = TextAlign.Center
       )
 

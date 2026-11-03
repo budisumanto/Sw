@@ -150,13 +150,49 @@ class OptimizerViewModel(application: Application) : AndroidViewModel(applicatio
             activeChunk = currentPart,
             totalChunks = totalSegments,
             statusText = if (totalSegments > 1) {
-              "Mengirim bagian $currentPart dari $totalSegments ke WhatsApp kamu..."
+              "Mengirim bagian $currentPart dari $totalSegments..."
             } else {
-              "Mengirim video HD ke WhatsApp kamu..."
+              "Menghubungkan ke server..."
             }
           )
 
-          val uploadResult = ApiUploader.uploadVideo(phone = cleanPhone, file = segment.file)
+          val uploadResult = ApiUploader.uploadVideo(
+            phone = cleanPhone,
+            file = segment.file
+          ) { bytesUploaded, totalBytes, speedBps, remainingSeconds ->
+            val speedMbS = speedBps / (1024.0 * 1024.0)
+            val speedText = if (speedMbS >= 1.0) {
+              String.format("%.1f MB/s", speedMbS)
+            } else {
+              val speedKbS = speedBps / 1024.0
+              String.format("%.0f KB/s", speedKbS)
+            }
+
+            val timeText = when {
+              remainingSeconds > 60 -> {
+                val mins = remainingSeconds / 60
+                val secs = remainingSeconds % 60
+                "~$mins mnt $secs dtk lagi"
+              }
+              remainingSeconds > 0 -> "~$remainingSeconds detik lagi"
+              remainingSeconds == 0L -> "Hampir selesai..."
+              else -> "Mengirim..."
+            }
+
+            val prefix = if (totalSegments > 1) "Bagian $currentPart/$totalSegments: " else ""
+            val dynamicStatusText = "$prefix$timeText ($speedText)"
+
+            _processingState.value = ProcessingState.Uploading(
+              activeChunk = currentPart,
+              totalChunks = totalSegments,
+              bytesUploaded = bytesUploaded,
+              totalBytes = totalBytes,
+              speedBps = speedBps,
+              remainingSeconds = remainingSeconds,
+              statusText = dynamicStatusText
+            )
+          }
+
           if (uploadResult.isFailure) {
             val errorMsg = uploadResult.exceptionOrNull()?.localizedMessage ?: "Gagal mengirim video ke server"
             _processingState.value = ProcessingState.Error("Gagal mengirim: $errorMsg")
