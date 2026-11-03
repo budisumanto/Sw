@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Info
@@ -55,28 +57,32 @@ fun ExecutionProgressCard(
   when (processingState) {
     is ProcessingState.Idle -> {
       if (hasVideoSelected) {
-        // Tombol kapsul penuh (56.dp) gradasi cerah Electric Mint ke Emerald
+        // Tombol Utama Liquid Capsule
         Button(
           onClick = onStartOptimize,
           modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(58.dp)
             .testTag("optimize_for_wa_status_button"),
-          shape = RoundedCornerShape(22.dp),
+          shape = RoundedCornerShape(24.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = Color(0xFF021E14)
           ),
-          border = BorderStroke(1.dp, IOSGlassHighlightTop)
+          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.35f))
         ) {
           Box(
             modifier = Modifier
               .fillMaxSize()
               .background(
                 Brush.horizontalGradient(
-                  listOf(ElectricMint, ElectricMintDark)
+                  listOf(
+                    Color(0xFF10E599),
+                    Color(0xFF00F2FE),
+                    Color(0xFF059669)
+                  )
                 ),
-                shape = RoundedCornerShape(22.dp)
+                shape = RoundedCornerShape(24.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
@@ -84,8 +90,15 @@ fun ExecutionProgressCard(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.Center
             ) {
+              Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = Color(0xFF022115),
+                modifier = Modifier.size(20.dp)
+              )
+              Spacer(modifier = Modifier.width(10.dp))
               Text(
-                text = "Optimalkan Kualitas",
+                text = "Optimalkan Kualitas HD",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF022115),
@@ -100,8 +113,8 @@ fun ExecutionProgressCard(
     is ProcessingState.Preparing -> {
       IOSLiquidGlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        padding = 20.dp
+        cornerRadius = 26.dp,
+        padding = 22.dp
       ) {
         Row(
           modifier = Modifier
@@ -112,7 +125,7 @@ fun ExecutionProgressCard(
           CircularProgressIndicator(
             color = ElectricMint,
             strokeWidth = 3.dp,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(26.dp)
           )
           Spacer(modifier = Modifier.width(16.dp))
           Text(
@@ -142,45 +155,56 @@ fun ExecutionProgressCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Text(
-              text = if (processingState.totalChunks > 1) {
-                "Mengompres bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
-              } else {
-                "Mengompres video HD..."
-              },
-              fontSize = 15.sp,
-              fontWeight = FontWeight.SemiBold,
-              color = IOSTextPrimary
-            )
+            Column {
+              Text(
+                text = if (processingState.totalChunks > 1) {
+                  "Mengompres bagian ${processingState.activeChunk} dari ${processingState.totalChunks}..."
+                } else {
+                  "Mengompres Video HD..."
+                },
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = IOSTextPrimary
+              )
+              Text(
+                text = "Menggunakan encoder libx264 profile high",
+                fontSize = 11.sp,
+                color = IOSTextSecondary
+              )
+            }
 
             val pct = (processingState.overallProgress * 100).toInt()
             Text(
               text = "$pct%",
-              fontSize = 16.sp,
-              fontWeight = FontWeight.Bold,
+              fontSize = 18.sp,
+              fontWeight = FontWeight.ExtraBold,
               color = ElectricMint
             )
           }
 
+          // Progress Bar Bergradasi Lembut
           LinearProgressIndicator(
             progress = { processingState.overallProgress },
             modifier = Modifier
               .fillMaxWidth()
-              .height(8.dp)
-              .clip(RoundedCornerShape(4.dp))
+              .height(9.dp)
+              .clip(RoundedCornerShape(6.dp))
               .testTag("encoding_progress_bar"),
             color = ElectricMint,
             trackColor = Color(0xFFFFFFFF).copy(alpha = 0.08f)
           )
 
-          // Kotak Catatan Edukatif Saat Kompresi: Jangan edit/potong ulang
+          // Kotak Catatan Edukatif: Jangan potong/edit di WA
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(14.dp))
+              .clip(RoundedCornerShape(16.dp))
               .background(Color(0xFF00F2FE).copy(alpha = 0.06f))
-              .border(BorderStroke(1.dp, Color(0xFF00F2FE).copy(alpha = 0.2f)), RoundedCornerShape(14.dp))
-              .padding(12.dp)
+              .border(
+                BorderStroke(1.dp, Color(0xFF00F2FE).copy(alpha = 0.20f)),
+                RoundedCornerShape(16.dp)
+              )
+              .padding(14.dp)
           ) {
             Row(
               verticalAlignment = Alignment.Top,
@@ -203,20 +227,21 @@ fun ExecutionProgressCard(
             }
           }
 
+          // Tombol Batalkan
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
           ) {
             Box(
               modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
                 .border(
-                  BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.35f)),
-                  RoundedCornerShape(12.dp)
+                  BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.40f)),
+                  RoundedCornerShape(14.dp)
                 )
                 .clickable(onClick = onCancel)
-                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .padding(horizontal = 14.dp, vertical = 7.dp)
                 .testTag("cancel_optimization_button"),
               contentAlignment = Alignment.Center
             ) {
@@ -235,27 +260,34 @@ fun ExecutionProgressCard(
     is ProcessingState.Uploading -> {
       IOSLiquidGlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        padding = 20.dp
+        cornerRadius = 28.dp,
+        padding = 22.dp
       ) {
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
           CircularProgressIndicator(
             color = ElectricMint,
             strokeWidth = 3.dp,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(28.dp)
           )
           Spacer(modifier = Modifier.width(16.dp))
-          Text(
-            text = processingState.statusText,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = IOSTextPrimary
-          )
+          Column {
+            Text(
+              text = processingState.statusText,
+              fontSize = 14.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = IOSTextPrimary
+            )
+            Text(
+              text = "Mengirimkan langsung ke chat WhatsApp kamu...",
+              fontSize = 11.sp,
+              color = IOSTextSecondary
+            )
+          }
         }
       }
     }

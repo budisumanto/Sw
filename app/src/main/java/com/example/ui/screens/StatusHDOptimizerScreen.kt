@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,16 +61,17 @@ fun StatusHDOptimizerScreen(
     contentWindowInsets = WindowInsets.safeDrawing,
     containerColor = IOSMidnightBackground
   ) { innerPadding ->
-    // Canvas: Deep Midnight Obsidian with soft radial ambient glow
+    // Canvas: Deep Midnight Obsidian with double ambient glow aurora
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(
           Brush.verticalGradient(
             listOf(
+              Color(0xFF020408),
               IOSMidnightDark,
               IOSMidnightBackground,
-              Color(0xFF040609)
+              Color(0xFF020306)
             )
           )
         )
@@ -75,15 +79,15 @@ fun StatusHDOptimizerScreen(
         .navigationBarsPadding(),
       contentAlignment = Alignment.TopCenter
     ) {
-      // Ambient radial lighting layer at the top
+      // Top Aurora Mint Ambient Layer
       Box(
         modifier = Modifier
           .fillMaxWidth()
-          .height(300.dp)
+          .height(340.dp)
           .background(
             Brush.radialGradient(
               colors = listOf(
-                Color(0xFF10E599).copy(alpha = 0.08f),
+                Color(0xFF10E599).copy(alpha = 0.09f),
                 Color(0xFF00F2FE).copy(alpha = 0.04f),
                 Color.Transparent
               )
@@ -96,25 +100,25 @@ fun StatusHDOptimizerScreen(
           .fillMaxWidth()
           .widthIn(max = 600.dp)
           .verticalScroll(rememberScrollState())
-          .padding(horizontal = 20.dp, vertical = 8.dp),
+          .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
         // 1. Top Header Minimalis iOS
         TopBarHeader()
 
-        // 2. Card Nomor WhatsApp (Estetik, jelas kesan wajibnya, dengan indikator & pesan edukasi)
+        // 2. Card Nomor WhatsApp (Estetik, Elegan, Badge Status & Micro-Interaction)
         PhoneNumberInputCard(
           phoneNumber = phoneNumber,
           onClickEdit = { viewModel.openPhonePromptDialog() }
         )
 
-        // 3. Area Pemilihan Video
+        // 3. Card Pemilih Video (Hero Dropzone Kaca / Pratinjau Sinematik)
         VideoSelectorCard(
           selectedVideo = selectedVideo,
           onVideoSelected = { uri -> viewModel.onVideoSelected(uri, context) }
         )
 
-        // 4. Tombol Aksi Utama ("Optimalkan Kualitas") & Status Berjalan (Compressing / Uploading)
+        // 4. Tombol Aksi Utama ("Optimalkan Kualitas HD") & Status Berjalan (Compressing / Uploading)
         ExecutionProgressCard(
           processingState = processingState,
           hasVideoSelected = selectedVideo != null,
@@ -123,10 +127,10 @@ fun StatusHDOptimizerScreen(
           onReset = { viewModel.resetOptimization() }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
       }
 
-      // Pop-up Wajib Isi Nomor WhatsApp saat pertama kali buka atau saat diedit
+      // Pop-up Modal Wajib Isi Nomor WhatsApp
       if (showPhonePromptDialog) {
         RequiredPhoneDialog(
           initialPhone = phoneNumber,

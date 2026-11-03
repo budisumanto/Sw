@@ -69,26 +69,36 @@ fun RequiredPhoneDialog(
       modifier = Modifier
         .fillMaxWidth()
         .testTag("required_phone_dialog"),
-      cornerRadius = 30.dp,
+      cornerRadius = 32.dp,
       padding = 24.dp,
       fillColor = Color(0xFF070B12).copy(alpha = 0.95f),
-      borderStroke = BorderStroke(1.dp, ElectricMint.copy(alpha = 0.4f))
+      borderStroke = BorderStroke(
+        1.dp,
+        Brush.verticalGradient(
+          listOf(
+            ElectricMint.copy(alpha = 0.6f),
+            Color(0xFFFFFFFF).copy(alpha = 0.15f),
+            Color(0xFFFFFFFF).copy(alpha = 0.05f)
+          )
+        )
+      )
     ) {
       Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
-        // Lingkaran Ikon Bercahaya
+        // Lingkaran Ikon Bercahaya Aura
         Box(
           modifier = Modifier
-            .size(60.dp)
+            .size(66.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
                 listOf(
-                  ElectricMint.copy(alpha = 0.25f),
-                  ElectricMint.copy(alpha = 0.05f)
+                  ElectricMint.copy(alpha = 0.28f),
+                  Color(0xFF00F2FE).copy(alpha = 0.08f),
+                  Color.Transparent
                 )
               )
             )
@@ -99,7 +109,7 @@ fun RequiredPhoneDialog(
             imageVector = Icons.Default.PhoneAndroid,
             contentDescription = null,
             tint = ElectricMint,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(30.dp)
           )
         }
 
@@ -108,7 +118,6 @@ fun RequiredPhoneDialog(
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-          // Badge Wajib
           Box(
             modifier = Modifier
               .clip(RoundedCornerShape(8.dp))
@@ -126,8 +135,8 @@ fun RequiredPhoneDialog(
           }
 
           Text(
-            text = "Masukkan Nomor WhatsApp",
-            fontSize = 19.sp,
+            text = "Nomor WhatsApp Kamu",
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = IOSTextPrimary,
             letterSpacing = (-0.4).sp,
@@ -135,7 +144,7 @@ fun RequiredPhoneDialog(
           )
 
           Text(
-            text = "Video kualitas HD yang telah dioptimalkan akan dikirimkan langsung ke chat WhatsApp nomor Anda.",
+            text = "Video kualitas HD yang telah dioptimalkan akan dikirimkan langsung ke chat WhatsApp nomor ini.",
             fontSize = 13.sp,
             color = IOSTextSecondary,
             textAlign = TextAlign.Center,
@@ -156,7 +165,7 @@ fun RequiredPhoneDialog(
               .testTag("dialog_phone_input_field"),
             placeholder = {
               Text(
-                text = "Contoh: 08123456789",
+                text = "08xxxxxxxxxx atau +62 8xx...",
                 fontSize = 14.sp,
                 color = IOSTextSecondary.copy(alpha = 0.5f)
               )
@@ -185,14 +194,14 @@ fun RequiredPhoneDialog(
           }
         }
 
-        // Kotak Catatan Edukatif (Jika video tidak masuk)
+        // Kotak Catatan Edukatif
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFFFFB340).copy(alpha = 0.08f))
-            .border(BorderStroke(1.dp, Color(0xFFFFB340).copy(alpha = 0.25f)), RoundedCornerShape(14.dp))
-            .padding(12.dp)
+            .border(BorderStroke(1.dp, Color(0xFFFFB340).copy(alpha = 0.25f)), RoundedCornerShape(16.dp))
+            .padding(14.dp)
         ) {
           Row(
             verticalAlignment = Alignment.Top,
@@ -215,7 +224,7 @@ fun RequiredPhoneDialog(
           }
         }
 
-        // Tombol Simpan & Lanjutkan
+        // Tombol Simpan
         Button(
           onClick = {
             val normalized = normalizeWhatsAppPhoneNumber(textInput)
@@ -227,30 +236,34 @@ fun RequiredPhoneDialog(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(54.dp)
             .testTag("save_mandatory_phone_button"),
-          shape = RoundedCornerShape(18.dp),
+          shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = Color(0xFF021E14)
           ),
-          border = BorderStroke(1.dp, IOSGlassHighlightTop)
+          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.25f))
         ) {
           Box(
             modifier = Modifier
               .fillMaxSize()
               .background(
                 Brush.horizontalGradient(
-                  listOf(ElectricMint, ElectricMintDark)
+                  listOf(
+                    Color(0xFF10E599),
+                    Color(0xFF00F2FE),
+                    Color(0xFF059669)
+                  )
                 ),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(20.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
             Text(
               text = "Simpan & Lanjutkan",
               fontWeight = FontWeight.Bold,
-              fontSize = 15.sp,
+              fontSize = 16.sp,
               color = Color(0xFF022115),
               letterSpacing = (-0.2).sp
             )

@@ -2,11 +2,13 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -49,40 +51,56 @@ fun SuccessDialog(
       modifier = Modifier
         .fillMaxWidth()
         .testTag("success_dialog"),
-      cornerRadius = 28.dp,
-      padding = 24.dp
+      cornerRadius = 32.dp,
+      padding = 26.dp,
+      fillColor = Color(0xFF070B12).copy(alpha = 0.95f),
+      borderStroke = BorderStroke(
+        1.dp,
+        Brush.verticalGradient(
+          listOf(
+            ElectricMint.copy(alpha = 0.6f),
+            Color(0xFFFFFFFF).copy(alpha = 0.15f),
+            Color(0xFFFFFFFF).copy(alpha = 0.05f)
+          )
+        )
+      )
     ) {
       Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
-        // Lingkaran centang sukses
+        // Lingkaran Centang Sukses Radiant
         Box(
           modifier = Modifier
-            .size(64.dp)
+            .size(70.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
-                listOf(ElectricMint, ElectricMintDark)
+                listOf(
+                  ElectricMint.copy(alpha = 0.30f),
+                  Color(0xFF00F2FE).copy(alpha = 0.08f),
+                  Color.Transparent
+                )
               )
-            ),
+            )
+            .border(BorderStroke(1.dp, ElectricMint.copy(alpha = 0.6f)), CircleShape),
           contentAlignment = Alignment.Center
         ) {
           Icon(
             imageVector = Icons.Default.Check,
             contentDescription = null,
-            tint = Color(0xFF022115),
+            tint = ElectricMint,
             modifier = Modifier.size(36.dp)
           )
         }
 
         Text(
           text = "Berhasil Dikirim!",
-          fontSize = 19.sp,
+          fontSize = 21.sp,
           fontWeight = FontWeight.Bold,
           color = IOSTextPrimary,
-          letterSpacing = (-0.3).sp,
+          letterSpacing = (-0.4).sp,
           textAlign = TextAlign.Center
         )
 
@@ -104,22 +122,25 @@ fun SuccessDialog(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(54.dp)
             .testTag("open_whatsapp_button"),
           shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = Color(0xFF021E14)
           ),
-          border = BorderStroke(1.dp, IOSGlassHighlightTop)
+          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.30f))
         ) {
           Box(
             modifier = Modifier
-              .fillMaxWidth()
-              .height(52.dp)
+              .fillMaxSize()
               .background(
                 Brush.horizontalGradient(
-                  listOf(ElectricMint, ElectricMintDark)
+                  listOf(
+                    Color(0xFF10E599),
+                    Color(0xFF00F2FE),
+                    Color(0xFF059669)
+                  )
                 ),
                 shape = RoundedCornerShape(20.dp)
               ),
@@ -128,8 +149,9 @@ fun SuccessDialog(
             Text(
               text = "Buka WhatsApp",
               fontWeight = FontWeight.Bold,
-              fontSize = 15.sp,
-              color = Color(0xFF022115)
+              fontSize = 16.sp,
+              color = Color(0xFF022115),
+              letterSpacing = (-0.2).sp
             )
           }
         }
@@ -138,7 +160,8 @@ fun SuccessDialog(
           Text(
             text = "Tutup",
             color = IOSTextSecondary,
-            fontSize = 14.sp
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
           )
         }
       }

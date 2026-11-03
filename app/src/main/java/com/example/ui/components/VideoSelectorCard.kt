@@ -24,7 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -71,70 +72,79 @@ fun VideoSelectorCard(
     padding = 22.dp
   ) {
     if (selectedVideo == null) {
-      // State 1: Pemilihan Video (Idle) - Hero Glass Card
+      // State 1: Dropzone Kaca Minimalis Menawan
       Column(
         modifier = Modifier
           .fillMaxWidth()
+          .clickable {
+            mediaPicker.launch(
+              PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+            )
+          }
           .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        // Floating Video Icon with Soft Radiant Glow
+        // Lingkaran Pendar Halus (Glowing Aura)
         Box(
           modifier = Modifier
-            .size(80.dp)
+            .size(84.dp)
             .clip(CircleShape)
             .background(
               Brush.radialGradient(
                 listOf(
-                  ElectricMint.copy(alpha = 0.22f),
-                  Color(0xFF00F2FE).copy(alpha = 0.08f),
+                  ElectricMint.copy(alpha = 0.20f),
+                  Color(0xFF00F2FE).copy(alpha = 0.05f),
                   Color.Transparent
                 )
               )
             )
             .border(
-              BorderStroke(1.dp, IOSGlassHighlightTop),
+              BorderStroke(
+                1.dp,
+                Brush.verticalGradient(
+                  listOf(
+                    Color(0xFFFFFFFF).copy(alpha = 0.35f),
+                    Color(0xFFFFFFFF).copy(alpha = 0.05f)
+                  )
+                )
+              ),
               CircleShape
-            )
-            .clickable {
-              mediaPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-              )
-            },
+            ),
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            imageVector = Icons.Default.Movie,
+            imageVector = Icons.Default.VideoLibrary,
             contentDescription = "Pilih Video",
             tint = ElectricMint,
-            modifier = Modifier.size(38.dp)
+            modifier = Modifier.size(36.dp)
           )
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-          text = "Pilih Video",
-          fontSize = 20.sp,
+          text = "Pilih Video untuk Dioptimalkan",
+          fontSize = 18.sp,
           fontWeight = FontWeight.Bold,
           color = IOSTextPrimary,
-          letterSpacing = (-0.3).sp
+          letterSpacing = (-0.4).sp,
+          textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-          text = "Format dan ukuran disesuaikan otomatis agar tidak buram.",
-          fontSize = 13.sp,
+          text = "Video akan di-encode ke resolusi HD 1080p dengan bitrate tajam agar kualitas visual tetap jernih di WhatsApp.",
+          fontSize = 12.sp,
           color = IOSTextSecondary,
           textAlign = TextAlign.Center,
-          lineHeight = 19.sp,
-          modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 22.dp)
+          lineHeight = 17.sp,
+          modifier = Modifier.padding(horizontal = 14.dp)
         )
 
-        // Tombol aksi iOS Kaca Berpendar
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Tombol Elegan Pilih Video
         Button(
           onClick = {
             mediaPicker.launch(
@@ -143,14 +153,14 @@ fun VideoSelectorCard(
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp)
+            .height(52.dp)
             .testTag("pick_video_button"),
           shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = Color(0xFF021E14)
           ),
-          border = BorderStroke(1.dp, IOSGlassHighlightTop)
+          border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.25f))
         ) {
           Box(
             modifier = Modifier
@@ -168,24 +178,25 @@ fun VideoSelectorCard(
               horizontalArrangement = Arrangement.Center
             ) {
               Icon(
-                imageVector = Icons.Default.PhotoLibrary,
+                imageVector = Icons.Default.Movie,
                 contentDescription = null,
                 tint = Color(0xFF022115),
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(18.dp)
               )
               Spacer(modifier = Modifier.width(8.dp))
               Text(
-                text = "Buka Galeri",
+                text = "Buka Galeri Video",
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = Color(0xFF022115)
+                color = Color(0xFF022115),
+                letterSpacing = (-0.2).sp
               )
             }
           }
         }
       }
     } else {
-      // State 2: Video Terpilih & Siap Dioptimalkan (Selected)
+      // State 2: Video Terpilih - Tampilan Sinematik Kaca
       Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -194,15 +205,23 @@ fun VideoSelectorCard(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          // Thumbnail video melengkung lembut
+          // Thumbnail Sinematik Berbingkai Kaca
           Box(
             modifier = Modifier
-              .size(width = 78.dp, height = 78.dp)
-              .clip(RoundedCornerShape(18.dp))
-              .background(Color.Black.copy(alpha = 0.5f))
+              .size(width = 84.dp, height = 84.dp)
+              .clip(RoundedCornerShape(20.dp))
+              .background(Color.Black.copy(alpha = 0.6f))
               .border(
-                BorderStroke(1.dp, IOSGlassHighlightTop),
-                RoundedCornerShape(18.dp)
+                BorderStroke(
+                  1.dp,
+                  Brush.verticalGradient(
+                    listOf(
+                      Color(0xFFFFFFFF).copy(alpha = 0.35f),
+                      Color(0xFFFFFFFF).copy(alpha = 0.05f)
+                    )
+                  )
+                ),
+                RoundedCornerShape(20.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
@@ -215,21 +234,21 @@ fun VideoSelectorCard(
               )
             } else {
               Icon(
-                imageVector = Icons.Default.Movie,
+                imageVector = Icons.Default.PlayCircleOutline,
                 contentDescription = null,
                 tint = ElectricMint,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(34.dp)
               )
             }
 
-            // Duration Pill in bottom right
+            // Durasi Pill di Kanan Bawah
             Box(
               modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(4.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.8f))
-                .padding(horizontal = 5.dp, vertical = 2.dp)
+                .padding(6.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.75f))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
               Text(
                 text = selectedVideo.formattedDuration,
@@ -242,7 +261,7 @@ fun VideoSelectorCard(
 
           Spacer(modifier = Modifier.width(14.dp))
 
-          // Video Information
+          // Detail Video
           Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -288,7 +307,7 @@ fun VideoSelectorCard(
           }
         }
 
-        // Tombol teks kaca halus di kanan: "Ganti Video"
+        // Tombol Ganti Video
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.End
@@ -298,7 +317,7 @@ fun VideoSelectorCard(
               .clip(RoundedCornerShape(14.dp))
               .background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
               .border(
-                BorderStroke(1.dp, IOSGlassHighlightTop),
+                BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.18f)),
                 RoundedCornerShape(14.dp)
               )
               .clickable {
@@ -314,13 +333,13 @@ fun VideoSelectorCard(
               Icon(
                 imageVector = Icons.Default.Autorenew,
                 contentDescription = null,
-                modifier = Modifier.size(15.dp),
+                modifier = Modifier.size(14.dp),
                 tint = IOSTextPrimary
               )
               Spacer(modifier = Modifier.width(6.dp))
               Text(
                 text = "Ganti Video",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 color = IOSTextPrimary,
                 fontWeight = FontWeight.SemiBold
               )
