@@ -7,7 +7,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,32 +21,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import com.example.model.VideoMetadata
-import com.example.ui.theme.ElectricMint
-import com.example.ui.theme.ElectricMintDark
-import com.example.ui.theme.IOSTextPrimary
-import com.example.ui.theme.IOSTextSecondary
+import com.example.ui.theme.LocalGlass
+import com.example.ui.theme.pressable
 
 @Composable
 fun VideoSelectorCard(
@@ -55,6 +52,8 @@ fun VideoSelectorCard(
   onVideoSelected: (android.net.Uri) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val g = LocalGlass.current
+
   val mediaPicker = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.PickVisualMedia()
   ) { uri ->
@@ -63,266 +62,217 @@ fun VideoSelectorCard(
     }
   }
 
-  IOSLiquidGlassCard(
+  val openGallery = {
+    mediaPicker.launch(
+      PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+    )
+  }
+
+  GlassCard(
     modifier = modifier
       .fillMaxWidth()
       .testTag("video_selector_card"),
-    cornerRadius = 28.dp,
-    padding = 22.dp
+    radius = 24.dp,
+    onClick = if (selectedVideo == null) openGallery else null
   ) {
     if (selectedVideo == null) {
-      // State 1: Pemilihan Video (Idle) - Hero Glass Card
+      // State 1: Dropzone Kaca Minimalis Menawan - Seluruh card dapat di-tap langsung untuk buka galeri
       Column(
         modifier = Modifier
           .fillMaxWidth()
           .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        // Floating Video Icon with Soft Radiant Glow
+        // Lingkaran Pendar Halus
         Box(
           modifier = Modifier
             .size(80.dp)
             .clip(CircleShape)
-            .background(
-              Brush.radialGradient(
-                listOf(
-                  ElectricMint.copy(alpha = 0.22f),
-                  Color(0xFF00F2FE).copy(alpha = 0.08f),
-                  Color.Transparent
-                )
-              )
-            )
-            .border(
-              BorderStroke(1.dp, IOSGlassHighlightTop),
-              CircleShape
-            )
-            .clickable {
-              mediaPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-              )
-            },
+            .background(g.accent.copy(alpha = 0.16f))
+            .border(1.dp, g.accent.copy(alpha = 0.40f), CircleShape)
+            .pressable { openGallery() },
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            imageVector = Icons.Default.Movie,
+            imageVector = Icons.Rounded.VideoLibrary,
             contentDescription = "Pilih Video",
-            tint = ElectricMint,
-            modifier = Modifier.size(38.dp)
+            tint = g.accent,
+            modifier = Modifier.size(36.dp)
           )
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-          text = "Pilih Video",
-          fontSize = 20.sp,
-          fontWeight = FontWeight.Bold,
-          color = IOSTextPrimary,
-          letterSpacing = (-0.3).sp
+          text = stringResource(id = R.string.pick_video_title),
+          style = MaterialTheme.typography.titleMedium,
+          color = g.text,
+          textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-          text = "Format dan ukuran disesuaikan otomatis agar tidak buram.",
-          fontSize = 13.sp,
-          color = IOSTextSecondary,
+          text = stringResource(id = R.string.pick_video_desc),
+          style = MaterialTheme.typography.bodyMedium,
+          color = g.textMuted,
           textAlign = TextAlign.Center,
-          lineHeight = 19.sp,
-          modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 22.dp)
+          modifier = Modifier.padding(horizontal = 14.dp)
         )
 
-        // Tombol aksi iOS Kaca Berpendar
-        Button(
-          onClick = {
-            mediaPicker.launch(
-              PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-            )
-          },
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Tombol Elegan Pilih Video
+        GlassButton(
+          text = stringResource(id = R.string.pick_video_btn),
+          onClick = openGallery,
+          primary = true,
           modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp)
-            .testTag("pick_video_button"),
-          shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color(0xFF021E14)
-          ),
-          border = BorderStroke(1.dp, IOSGlassHighlightTop)
-        ) {
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(
-                Brush.horizontalGradient(
-                  listOf(ElectricMint, ElectricMintDark)
-                ),
-                shape = RoundedCornerShape(20.dp)
-              ),
-            contentAlignment = Alignment.Center
-          ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.PhotoLibrary,
-                contentDescription = null,
-                tint = Color(0xFF022115),
-                modifier = Modifier.size(19.dp)
-              )
-              Spacer(modifier = Modifier.width(8.dp))
-              Text(
-                text = "Buka Galeri",
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color(0xFF022115)
-              )
-            }
-          }
-        }
+            .testTag("pick_video_button")
+        )
       }
     } else {
-      // State 2: Video Terpilih & Siap Dioptimalkan (Selected)
+      // State 2: Video Terpilih - Tampilan Sinematik Kaca Bersih & Cantik
       Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
         Row(
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF0F131D).copy(alpha = 0.60f))
+            .border(
+              1.dp,
+              Color.White.copy(alpha = 0.12f),
+              RoundedCornerShape(20.dp)
+            )
+            .padding(12.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          // Thumbnail video melengkung lembut
+          // Poster Sinematik Murni (tanpa badge durasi ganda di dalam)
           Box(
             modifier = Modifier
-              .size(width = 78.dp, height = 78.dp)
-              .clip(RoundedCornerShape(18.dp))
-              .background(Color.Black.copy(alpha = 0.5f))
+              .size(width = 88.dp, height = 88.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .background(Color(0xFF0A0D14))
               .border(
-                BorderStroke(1.dp, IOSGlassHighlightTop),
-                RoundedCornerShape(18.dp)
+                1.dp,
+                Color.White.copy(alpha = 0.18f),
+                RoundedCornerShape(16.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
             if (selectedVideo.thumbnailBitmap != null) {
               Image(
                 bitmap = selectedVideo.thumbnailBitmap.asImageBitmap(),
-                contentDescription = "Pratinjau Video",
+                contentDescription = "Poster Video",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
               )
             } else {
               Icon(
-                imageVector = Icons.Default.Movie,
+                imageVector = Icons.Rounded.PlayCircle,
                 contentDescription = null,
-                tint = ElectricMint,
-                modifier = Modifier.size(32.dp)
-              )
-            }
-
-            // Duration Pill in bottom right
-            Box(
-              modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(4.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.8f))
-                .padding(horizontal = 5.dp, vertical = 2.dp)
-            ) {
-              Text(
-                text = selectedVideo.formattedDuration,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                tint = g.accent,
+                modifier = Modifier.size(40.dp)
               )
             }
           }
 
-          Spacer(modifier = Modifier.width(14.dp))
+          Spacer(modifier = Modifier.width(16.dp))
 
-          // Video Information
+          // Detail Video: Judul Nama File, Durasi & Ukuran
           Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
           ) {
             Text(
               text = selectedVideo.fileName,
-              fontSize = 15.sp,
-              fontWeight = FontWeight.Bold,
-              color = IOSTextPrimary,
+              style = MaterialTheme.typography.titleMedium,
+              color = Color.White,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-              text = "${selectedVideo.formattedDuration} • ${selectedVideo.formattedSize}",
-              fontSize = 13.sp,
-              color = ElectricMint,
-              fontWeight = FontWeight.SemiBold
-            )
-
-            if (selectedVideo.needsSplitting) {
-              Spacer(modifier = Modifier.height(6.dp))
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              // Badge Durasi Bersih
               Box(
                 modifier = Modifier
-                  .clip(RoundedCornerShape(8.dp))
-                  .background(Color(0xFFFEF3C7).copy(alpha = 0.12f))
-                  .border(
-                    BorderStroke(1.dp, Color(0xFFFDE68A).copy(alpha = 0.35f)),
-                    RoundedCornerShape(8.dp)
-                  )
+                  .clip(RoundedCornerShape(999.dp))
+                  .background(g.accent.copy(alpha = 0.15f))
+                  .border(1.dp, g.accent.copy(alpha = 0.35f), RoundedCornerShape(999.dp))
                   .padding(horizontal = 8.dp, vertical = 3.dp)
               ) {
                 Text(
-                  text = "Dibagi ${selectedVideo.estimatedChunkCount} bagian otomatis (per 90s)",
+                  text = selectedVideo.formattedDuration,
                   fontSize = 11.sp,
-                  color = Color(0xFFFDE68A),
-                  fontWeight = FontWeight.Medium
+                  style = MaterialTheme.typography.labelSmall,
+                  color = g.accent
                 )
               }
+
+              // Badge Ukuran Bersih
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(999.dp))
+                  .background(Color.White.copy(alpha = 0.08f))
+                  .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(999.dp))
+                  .padding(horizontal = 8.dp, vertical = 3.dp)
+              ) {
+                Text(
+                  text = selectedVideo.formattedSize,
+                  fontSize = 11.sp,
+                  style = MaterialTheme.typography.labelSmall,
+                  color = Color(0xFFD1D5DB)
+                )
+              }
+            }
+
+            if (selectedVideo.needsSplitting) {
+              Spacer(modifier = Modifier.height(8.dp))
+              Text(
+                text = stringResource(id = R.string.auto_split_note, selectedVideo.estimatedChunkCount),
+                fontSize = 11.sp,
+                color = Color(0xFFFDE68A)
+              )
             }
           }
         }
 
-        // Tombol teks kaca halus di kanan: "Ganti Video"
+        // Tombol Ganti Video
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.End
         ) {
           Box(
             modifier = Modifier
-              .clip(RoundedCornerShape(14.dp))
-              .background(Color(0xFFFFFFFF).copy(alpha = 0.08f))
-              .border(
-                BorderStroke(1.dp, IOSGlassHighlightTop),
-                RoundedCornerShape(14.dp)
-              )
-              .clickable {
-                mediaPicker.launch(
-                  PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
-                )
-              }
-              .padding(horizontal = 14.dp, vertical = 8.dp)
+              .clip(RoundedCornerShape(999.dp))
+              .background(g.fillStrong, RoundedCornerShape(999.dp))
+              .border(1.dp, g.border, RoundedCornerShape(999.dp))
+              .pressable { openGallery() }
+              .padding(horizontal = 16.dp, vertical = 8.dp)
               .testTag("change_video_button"),
             contentAlignment = Alignment.Center
           ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(
-                imageVector = Icons.Default.Autorenew,
+                imageVector = Icons.Rounded.Autorenew,
                 contentDescription = null,
                 modifier = Modifier.size(15.dp),
-                tint = IOSTextPrimary
+                tint = g.text
               )
               Spacer(modifier = Modifier.width(6.dp))
               Text(
-                text = "Ganti Video",
-                fontSize = 13.sp,
-                color = IOSTextPrimary,
-                fontWeight = FontWeight.SemiBold
+                text = stringResource(id = R.string.change_video_btn),
+                style = MaterialTheme.typography.labelSmall,
+                color = g.text
               )
             }
           }

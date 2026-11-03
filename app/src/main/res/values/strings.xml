@@ -1,3 +1,41 @@
 <resources>
     <string name="app_name">StatusHD</string>
+    <string name="tagline">Crystal Clear Quality for WhatsApp Status</string>
+    <string name="target_phone_number">Target WhatsApp Number</string>
+    <string name="target_phone_subtitle">Delivery destination for HD video</string>
+    <string name="target_phone_not_set">Number not set</string>
+    <string name="target_phone_mandatory">REQUIRED</string>
+    <string name="target_phone_tap_to_fill">Tap to fill WhatsApp number...</string>
+    <string name="target_phone_edit">Edit</string>
+    <string name="target_phone_fill">Fill</string>
+    <string name="target_phone_note">If the video does not arrive in your WhatsApp chat, please double check if the number was entered correctly.</string>
+
+    <string name="pick_video_title">Select Video to Optimize</string>
+    <string name="pick_video_desc">The video will be processed to stay sharp and clear when uploaded to your WhatsApp status.</string>
+    <string name="pick_video_btn">Open Video Gallery</string>
+    <string name="change_video_btn">Change Video</string>
+    <string name="auto_split_note">Auto-split into %1$d parts (every 90s)</string>
+
+    <string name="btn_optimize">Send to WhatsApp Status</string>
+    <string name="processing_preparing">Preparing best quality...</string>
+    <string name="processing_chunk">Processing part %1$d of %2$d...</string>
+    <string name="processing_single">Processing Video...</string>
+    <string name="processing_subtitle">Adjusting video clarity</string>
+    <string name="important_warning">Important: Do not edit, trim, or add music to the received video in WhatsApp, as WhatsApp will automatically recompress and degrade its quality.</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="uploading_chunk">Sending part %1$d of %2$d...</string>
+    <string name="uploading_single">Sending to WhatsApp...</string>
+    <string name="cancelled_msg">Process cancelled</string>
+    <string name="btn_retry">Try Again</string>
+    <string name="btn_repeat">Retry</string>
+
+    <string name="dialog_phone_title">WhatsApp Number</string>
+    <string name="dialog_phone_desc">Processed crystal clear video will be sent automatically to this WhatsApp number.</string>
+    <string name="dialog_phone_error">Incomplete WhatsApp number (minimum 10 digits).</string>
+    <string name="dialog_phone_save">Save &amp; Continue</string>
+
+    <string name="dialog_success_title">Sent Successfully!</string>
+    <string name="dialog_success_desc">HD Video has been sent to your WhatsApp! Open WA and save or forward the video to your Status.</string>
+    <string name="dialog_success_open_wa">Open WhatsApp</string>
+    <string name="dialog_close">Close</string>
 </resources>

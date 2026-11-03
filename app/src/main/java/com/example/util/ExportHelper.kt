@@ -71,35 +71,23 @@ object ExportHelper {
     }
   }
 
-  /**
-   * Share video as an uncompressed stream or document directly to WhatsApp
-   * to guarantee maximum fidelity without gallery compression.
-   */
-  fun shareDirectToWhatsApp(context: Context, file: File, asDocument: Boolean = false): Boolean {
+  fun openWhatsApp(context: Context): Boolean {
     return try {
-      val uri = getContentUri(context, file)
-      val intent = Intent(Intent.ACTION_SEND).apply {
-        type = if (asDocument) "application/octet-stream" else "video/mp4"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, "StatusHD Optimized Video")
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setPackage("com.whatsapp")
-      }
-      context.startActivity(Intent.createChooser(intent, "Kirim via WhatsApp"))
-      true
-    } catch (_: Exception) {
-      try {
-        val uri = getContentUri(context, file)
-        val genericIntent = Intent(Intent.ACTION_SEND).apply {
-          type = "video/mp4"
-          putExtra(Intent.EXTRA_STREAM, uri)
-          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(genericIntent, "Bagikan Video HD"))
+      val intent = context.packageManager.getLaunchIntentForPackage("com.whatsapp")
+        ?: context.packageManager.getLaunchIntentForPackage("com.whatsapp.w4b")
+      if (intent != null) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
         true
-      } catch (_: Exception) {
-        false
+      } else {
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.whatsapp")).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(webIntent)
+        true
       }
+    } catch (e: Exception) {
+      false
     }
   }
 }

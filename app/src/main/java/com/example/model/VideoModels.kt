@@ -91,7 +91,20 @@ sealed interface ProcessingState {
     val statusText: String
   ) : ProcessingState
 
-  data class Success(val result: OptimizationResult) : ProcessingState
+  data class Uploading(
+    val activeChunk: Int,
+    val totalChunks: Int,
+    val bytesUploaded: Long = 0L,
+    val totalBytes: Long = 0L,
+    val speedBps: Long = 0L,
+    val remainingSeconds: Long = -1L,
+    val statusText: String
+  ) : ProcessingState
+
+  data class Success(
+    val result: OptimizationResult,
+    val message: String = "Video HD sudah dikirim ke WhatsApp kamu! Buka WA dan simpan atau teruskan videonya ke Status."
+  ) : ProcessingState
 
   data object Cancelled : ProcessingState
 
@@ -111,52 +124,54 @@ fun formatFileSize(bytes: Long): String {
   }
 }
 
-data class LinkedWhatsAppAccount(
-  val rawPhoneNumber: String = "",
-  val normalizedPhoneNumber: String = "",
-  val isLinked: Boolean = false,
-  val linkedAtTimestamp: Long = 0L,
-  val deviceLabel: String = "WhatsApp Web Companion",
-  val connectionMethod: String = "PAIRING_CODE", // "QR_SCAN" or "PAIRING_CODE"
-  val activePairingCode: String = "",
-  val pairingSessionId: String = ""
-) {
-  val formattedDisplayNumber: String
-    get() {
-      if (!isLinked) return "Belum Terhubung"
-      if (normalizedPhoneNumber.isNotBlank()) {
-        val clean = normalizedPhoneNumber
-        return if (clean.startsWith("62") && clean.length >= 10) {
-          val rest = clean.substring(2)
-          val part1 = rest.take(3)
-          val part2 = rest.drop(3).take(4)
-          val part3 = rest.drop(7)
-          "+62 $part1-$part2-$part3"
-        } else {
-          "+$clean"
-        }
-      }
-      return deviceLabel
-    }
-}
-
-fun generateRandomPairingCode(): String {
-  val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-  val p1 = (1..4).map { chars.random() }.joinToString("")
-  val p2 = (1..4).map { chars.random() }.joinToString("")
-  return "$p1-$p2"
-}
-
-fun normalizePhoneNumber(input: String): String {
-  val trimmed = input.trim()
-  var digits = trimmed.replace(Regex("[^0-9]"), "")
-  if (digits.startsWith("0")) {
-    digits = "62" + digits.substring(1)
-  } else if (digits.startsWith("8")) {
-    digits = "62$digits"
-  } else if (!digits.startsWith("62") && digits.length in 8..15) {
-    digits = "62$digits"
+/**
+ * Normalisasi nomor WhatsApp pengguna agar server dapat menerima format standar angka '62...'.
+ * Menerima variasi input: '+', spasi, strip '-', awalan '0', '62', '08', '+628'.
+ * Contoh:
+ *   "+62 812-3456-7890" -> "6281234567890"
+ *   "081234567890"      -> "6281234567890"
+ *   "6281234567890"     -> "6281234567890"
+ *   "81234567890"       -> "6281234567890"
+ */
+fun normalizeWhatsAppPhoneNumber(input: String): String {
+  val digitsOnly = input.replace(Regex("[^0-9]"), "")
+  return when {
+    digitsOnly.startsWith("0") -> "62" + digitsOnly.substring(1)
+    digitsOnly.startsWith("62") -> digitsOnly
+    digitsOnly.startsWith("8") -> "62$digitsOnly"
+    digitsOnly.isNotEmpty() -> "62$digitsOnly"
+    else -> ""
   }
-  return digits
 }
 
+/**
+ * Memformat nomor telepon dengan spasi rapi untuk kenyamanan pengguna (contoh: +62 812 3456 7890).
+ */
+fun formatDisplayPhoneNumber(rawOrNormalized: String): String {
+  val digits = rawOrNormalized.replace(Regex("[^0-9]"), "")
+  if (digits.isEmpty()) return ""
+
+  // Jika diawali 62 atau dinormalisasi
+  val clean = normalizeWhatsAppPhoneNumber(rawOrNormalized)
+  if (clean.startsWith("62")) {
+    val rest = clean.substring(2)
+    val chunks = mutableListOf<String>()
+    if (rest.isNotEmpty()) chunks.add(rest.take(3))
+    if (rest.length > 3) chunks.add(rest.substring(3, kotlin.math.min(7, rest.length)))
+    if (rest.length > 7) chunks.add(rest.substring(7, kotlin.math.min(11, rest.length)))
+    if (rest.length > 11) chunks.add(rest.substring(11))
+    return "+62 " + chunks.joinToString(" ")
+  }
+
+  // Jika dimulai dengan 0
+  if (digits.startsWith("0")) {
+    val chunks = mutableListOf<String>()
+    if (digits.isNotEmpty()) chunks.add(digits.take(4))
+    if (digits.length > 4) chunks.add(digits.substring(4, kotlin.math.min(8, digits.length)))
+    if (digits.length > 8) chunks.add(digits.substring(8, kotlin.math.min(12, digits.length)))
+    if (digits.length > 12) chunks.add(digits.substring(12))
+    return chunks.joinToString(" ")
+  }
+
+  return rawOrNormalized
+}

@@ -30,11 +30,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 // Palet Kaca Otentik iOS (Neutral Translucent Frosted Glass)
-val IOSMidnightBackground = Color(0xFF06080D)
-val IOSMidnightDark = Color(0xFF0A0E17)
-val IOSGlassFill = Color(0xFFFFFFFF).copy(alpha = 0.08f)
-val IOSGlassFillSubtle = Color(0xFFFFFFFF).copy(alpha = 0.04f)
-val IOSGlassFillElevated = Color(0xFFFFFFFF).copy(alpha = 0.12f)
+val IOSMidnightBackground = Color(0xFF04060A)
+val IOSMidnightDark = Color(0xFF080C14)
+val IOSGlassFill = Color(0xFFFFFFFF).copy(alpha = 0.055f)
+val IOSGlassFillSubtle = Color(0xFFFFFFFF).copy(alpha = 0.03f)
+val IOSGlassFillElevated = Color(0xFFFFFFFF).copy(alpha = 0.09f)
 val IOSGlassHighlightTop = Color(0xFFFFFFFF).copy(alpha = 0.28f)
 val IOSGlassHighlightBottom = Color(0xFFFFFFFF).copy(alpha = 0.03f)
 
@@ -43,14 +43,18 @@ val IOSElectricMint = Color(0xFF10E599)
 val IOSElectricMintDark = Color(0xFF059669)
 val IOSCyanAccent = Color(0xFF00F2FE)
 val IOSTextPrimary = Color(0xFFFFFFFF)
-val IOSTextSecondary = Color(0xFF98989F)
-val IOSTextTertiary = Color(0xFF6E6E73)
+val IOSTextSecondary = Color(0xFFA1A1AA)
+val IOSTextTertiary = Color(0xFF71717A)
 
 fun iosGlassBorder(strokeWidth: Dp = 1.dp): BorderStroke {
   return BorderStroke(
     width = strokeWidth,
     brush = Brush.verticalGradient(
-      listOf(IOSGlassHighlightTop, IOSGlassHighlightBottom)
+      listOf(
+        IOSGlassHighlightTop,
+        Color(0xFFFFFFFF).copy(alpha = 0.08f),
+        IOSGlassHighlightBottom
+      )
     )
   )
 }
@@ -66,22 +70,25 @@ fun IOSLiquidGlassCard(
   cornerRadius: Dp = 28.dp,
   padding: Dp = 20.dp,
   fillColor: Color = IOSGlassFill,
+  borderStroke: BorderStroke? = null,
   content: @Composable BoxScope.() -> Unit
 ) {
   val shape = RoundedCornerShape(cornerRadius)
+  val finalBorder = borderStroke ?: BorderStroke(
+    width = 1.dp,
+    brush = Brush.verticalGradient(
+      listOf(
+        Color(0xFFFFFFFF).copy(alpha = 0.30f),
+        Color(0xFFFFFFFF).copy(alpha = 0.07f),
+        Color(0xFFFFFFFF).copy(alpha = 0.02f)
+      )
+    )
+  )
   Box(
     modifier = modifier
       .clip(shape)
       .background(fillColor)
-      .border(
-        BorderStroke(
-          width = 1.dp,
-          brush = Brush.verticalGradient(
-            listOf(IOSGlassHighlightTop, IOSGlassHighlightBottom)
-          )
-        ),
-        shape = shape
-      )
+      .border(finalBorder, shape = shape)
       .padding(padding),
     content = content
   )
