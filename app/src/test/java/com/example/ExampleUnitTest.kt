@@ -19,26 +19,26 @@ import java.io.File
 class ExampleUnitTest {
 
   @Test
-  fun `anti-bloat bitrate formula clamps high bitrates to 4500k`() {
+  fun `anti-bloat bitrate formula clamps high bitrates to 6000k`() {
     // 50 MB in 10 seconds -> ~40,000 kbps
     val sizeBytes = 50L * 1024 * 1024
     val durationMs = 10_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(4500, maxrate)
-    assertEquals(9000, bufsize)
+    assertEquals(6000, maxrate)
+    assertEquals(12000, bufsize)
   }
 
   @Test
-  fun `anti-bloat bitrate formula clamps low bitrates to 1200k`() {
+  fun `anti-bloat bitrate formula clamps low bitrates to 1500k`() {
     val sizeBytes = 500L * 1024
     val durationMs = 30_000L
 
     val (maxrate, bufsize) = StatusHDOptimizerEngine.calculateMaxrateAndBufsize(sizeBytes, durationMs)
 
-    assertEquals(1200, maxrate)
-    assertEquals(2400, bufsize)
+    assertEquals(1500, maxrate)
+    assertEquals(3000, bufsize)
   }
 
   @Test
@@ -71,7 +71,7 @@ class ExampleUnitTest {
     assertEquals("high", argsList[argsList.indexOf("-profile:v") + 1])
     assertFalse(argsList.contains("-level"))
     assertEquals("film", argsList[argsList.indexOf("-tune") + 1])
-    assertEquals("aq-mode=3", argsList[argsList.indexOf("-x264-params") + 1])
+    assertEquals("aq-mode=3:bframes=2", argsList[argsList.indexOf("-x264-params") + 1])
     assertEquals("20", argsList[argsList.indexOf("-crf") + 1])
     assertEquals("48", argsList[argsList.indexOf("-g") + 1])
 
@@ -80,8 +80,9 @@ class ExampleUnitTest {
 
     assertTrue(argsList.contains("-vf"))
     val vfIndex = argsList.indexOf("-vf")
-    assertEquals(StatusHDOptimizerEngine.SCALE_FILTER, argsList[vfIndex + 1])
-    assertTrue(StatusHDOptimizerEngine.SCALE_FILTER.endsWith(":flags=lanczos"))
+    assertEquals(StatusHDOptimizerEngine.VIDEO_FILTER, argsList[vfIndex + 1])
+    assertTrue(StatusHDOptimizerEngine.VIDEO_FILTER.startsWith("fps='min(source_fps,60)'"))
+    assertTrue(StatusHDOptimizerEngine.VIDEO_FILTER.endsWith(":flags=lanczos"))
 
     assertEquals("yuv420p", argsList[argsList.indexOf("-pix_fmt") + 1])
     assertEquals("aac", argsList[argsList.indexOf("-c:a") + 1])

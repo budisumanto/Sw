@@ -32,15 +32,15 @@ class StatusHDOptimizerEngine(private val context: Context) {
 
   companion object {
     const val MAX_CHUNK_DURATION_SEC = 90
-    const val SCALE_FILTER = "scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2):flags=lanczos"
+    const val VIDEO_FILTER = "fps='min(source_fps,60)',scale=w=if(gte(iw\\,ih)\\,-2\\,min(1080\\,iw)):h=if(gte(iw\\,ih)\\,min(1080\\,ih)\\,-2):flags=lanczos"
 
     fun calculateMaxrateAndBufsize(sizeBytes: Long, durationMs: Long): Pair<Int, Int> {
       val duration = (durationMs / 1000L).coerceAtLeast(1L)
       val originalBitrate = (sizeBytes * 8L) / duration / 1000L
 
       var maxrate = originalBitrate.toInt()
-      if (maxrate > 4500) maxrate = 4500
-      if (maxrate < 1200) maxrate = 1200
+      if (maxrate > 6000) maxrate = 6000
+      if (maxrate < 1500) maxrate = 1500
 
       val bufsize = maxrate * 2
       return Pair(maxrate, bufsize)
@@ -79,7 +79,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("-tune")
       args.add("film")
       args.add("-x264-params")
-      args.add("aq-mode=3")
+      args.add("aq-mode=3:bframes=2")
       args.add("-crf")
       args.add("20")
       args.add("-g")
@@ -91,7 +91,7 @@ class StatusHDOptimizerEngine(private val context: Context) {
       args.add("${bufsize}k")
 
       args.add("-vf")
-      args.add(SCALE_FILTER)
+      args.add(VIDEO_FILTER)
 
       args.add("-profile:v")
       args.add("high")
